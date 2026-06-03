@@ -209,7 +209,9 @@ MCP keys are separate from REST API keys. Generate them at [compabase.com/mcp](h
 
 Each MCP key has a monthly query quota. Every `tools/call` invocation counts as one query.
 
-See plans and pricing at [compabase.com/pricing](https://compabase.com/pricing).
+**10 MCP queries per month are free.** For more queries, upgrade to a higher plan.
+
+See [compabase.com/pricing](https://compabase.com/pricing) for details.
 
 ---
 
