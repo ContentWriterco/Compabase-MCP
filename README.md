@@ -155,8 +155,6 @@ Includes: `revenue_total`, `profit_net`, `profit_sales`, `ebitda`, `total_assets
 
 **Read-only SQL SELECT** against the Compabase database. Used by the AI for complex aggregations, multi-table joins, and calculations that the structured tools cannot express.
 
-Available tables: `company_search`, `company_profile`, `entities`, `entity_financial_metrics`, `pkd_translations`, `pkd_statistics`, `pkd_rankings`, `person_entity_links`, `persons`, `pln_usd_annual_rates`, `pln_eur_annual_rates`.
-
 > This tool is invoked automatically by the AI when needed — you do not call it directly.
 
 ---
@@ -211,14 +209,7 @@ MCP keys are separate from REST API keys. Generate them at [compabase.com/mcp](h
 
 Each MCP key has a monthly query quota. Every `tools/call` invocation counts as one query.
 
-| Plan | MCP Queries / month |
-|------|-------------------|
-| Free | Included |
-| Pro | Higher limits |
-| Scale | High-volume |
-| Enterprise | Custom |
-
-View current usage and manage keys at [compabase.com/mcp](https://compabase.com/mcp).
+See plans and pricing at [compabase.com/pricing](https://compabase.com/pricing).
 
 ---
 
