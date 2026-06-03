@@ -241,7 +241,7 @@ Supported JSON-RPC methods:
 
 ## Related
 
-- **[Compabase REST API](https://github.com/compabase/compabase-api)** — full REST API for Polish companies (KRS & CEIDG) with OpenAPI spec
+- **[Compabase REST API](https://github.com/ContentWriterco/Compabase-API)** — full REST API for Polish companies (KRS & CEIDG) with OpenAPI spec
 - **[Interactive API Docs](https://compabase.com/docs/)** — try the REST endpoints in the browser
 - **[compabase.com](https://compabase.com)** — browse Polish companies, search by sector, region, and financials, chat with AI about Polish business
 
