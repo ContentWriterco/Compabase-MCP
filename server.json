@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.ContentWriterco/compabase",
+  "name": "io.github.bartosz-ciesielski/compabase",
   "title": "Compabase",
   "description": "MCP server for 3M+ Polish companies — KRS & CEIDG financials, ownership, and industry search.",
   "version": "1.0.0",
