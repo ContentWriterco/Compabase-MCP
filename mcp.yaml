@@ -59,7 +59,7 @@ servers:
 tags:
   - name: Quickstart
     description: |
-      Connect your AI client to the Compabase MCP endpoint. You can start **without a key** —
+      Connect your AI client to the Compabase MCP endpoint. You can start **without a key** –
       ask the agent to sign you up (`request_signup`); after email confirmation it writes
       `mcpk_…` into the client config. You can also create a key in
       <a href="/integrations?tab=mcp" target="_blank" rel="noopener noreferrer">Integrations → MCP</a>.
@@ -392,7 +392,7 @@ paths:
       operationId: search_companies
       description: |
         Search and filter Polish KRS companies (spółki). Compabase also holds the full CEIDG/JDG register;
-        this tool does not browse JDG — those without a public contact email are hidden because of RODO.
+        this tool does not browse JDG – those without a public contact email are hidden because of RODO.
         Default `fields=summary` returns compact rows
         (name, NIP, KRS, location, PKD, latest financials, email/phone/website).
         `fields=contacts_only` is a CRM list. `fields=full` returns every company_search column
@@ -487,7 +487,7 @@ paths:
       description: |
         Registry profile and headline financials for **one** latest filed period
         (`financials.period_to`). Revenue, profit, costs, and assets in this response are that
-        same period — there is no nested summary from a different year. Contacts (email, phone,
+        same period – there is no nested summary from a different year. Contacts (email, phone,
         website) are included when on record. NIP lookup also returns a CEIDG/JDG firm when it
         has a public contact email (RODO). Full balance-sheet line items and earlier years
         are in `get_financials`.
@@ -761,7 +761,7 @@ paths:
       summary: get_company_fe
       operationId: get_company_fe
       description: |
-        European Funds (Fundusze Europejskie) projects for one company — official MFiPR lists,
+        European Funds (Fundusze Europejskie) projects for one company – official MFiPR lists,
         EU co-financing, programme and dates. Keyed by NIP after unique name match.
         This is cohesion/shared-management funds, not TED procurement, not FTS Commission grants,
         and not SUDOP state aid.
@@ -805,7 +805,7 @@ paths:
       summary: get_company_fts
       operationId: get_company_fts
       description: |
-        European Commission Financial Transparency System awards for one company — Horizon, LIFE,
+        European Commission Financial Transparency System awards for one company – Horizon, LIFE,
         Erasmus and other direct/indirect-management grants. Keyed by NIP (VAT).
         Not cohesion funds (use `get_company_fe`) and not TED procurement.
 
@@ -984,7 +984,7 @@ paths:
       description: |
         Warsaw Stock Exchange listing: ticker, ISIN, market (GPW main / NewConnect / GlobalConnect),
         last close and change, market cap, shares outstanding, EPS, P/E, dividend per share and yield.
-        Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars — not full OHLCV history.
+        Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars – not full OHLCV history.
         Keyed by NIP.
 
         **Example prompts:** “Is this company listed on GPW?” · “Ticker, last close and P/E for Orlen”
@@ -1238,7 +1238,7 @@ paths:
         Run a **read-only** SQL `SELECT` (or `WITH … SELECT`) against the Compabase database.
         Use this for custom joins and multi-step aggregations the other tools cannot express.
         Prefer dedicated tools (`search_companies`, `get_financials`, and similar) when they
-        cover the question — they return smaller, more predictable payloads.
+        cover the question – they return smaller, more predictable payloads.
         CRBR names for KRS companies: `company_crbr_*_public` (all companies; birth_year only).
         Raw `company_crbr_beneficiaries` is rejected. JDG people live in `ceidg_chat` (email required).
 
@@ -1750,7 +1750,7 @@ paths:
       operationId: export_companies
       description: |
         Bulk file export of companies matching filters (CSV / XLSX / JSON). Up to 500 rows per call.
-        Default `fields=contacts_only` is name, NIP, KRS, city, email, phone, website — small enough
+        Default `fields=contacts_only` is name, NIP, KRS, city, email, phone, website – small enough
         for MCP clients. `fields=summary` adds location, PKD, latest revenue/profit.
         `fields=full` is the complete dump (change history, rankings, people, enrichments) and often
         exceeds client limits.

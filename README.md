@@ -1,4 +1,4 @@
-# 🇵🇱 Polish Companies MCP Server — Compabase
+# 🇵🇱 Polish Companies MCP Server – Compabase
 
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -6,7 +6,7 @@
 [![Docs](https://img.shields.io/badge/Docs-Interactive_Redoc-blue)](https://compabase.com/docs/mcp/)
 [![Free Tier](https://img.shields.io/badge/Free_Tier-Available-brightgreen)](https://compabase.com/mcp)
 
-**Compabase MCP** is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives AI assistants — Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client — direct access to **3 million+ Polish companies** from the **KRS (National Court Register)** and **CEIDG** registries, plus financials, people, rankings, and public-register enrichments (SUDOP, BZP, TED, URE, BDO, GPW, KRZ, CRBR, MSiG, EU funds).
+**Compabase MCP** is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives AI assistants – Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client – direct access to **3 million+ Polish companies** from the **KRS (National Court Register)** and **CEIDG** registries, plus financials, people, rankings, and public-register enrichments (SUDOP, BZP, TED, URE, BDO, GPW, KRZ, CRBR, MSiG, EU funds).
 
 Ask in plain language. The model maps prompts to structured tools over Streamable HTTP (JSON-RPC 2.0).
 
@@ -16,7 +16,7 @@ Ask in plain language. The model maps prompts to structured tools over Streamabl
 
 You can connect **without a key**. The agent signs you up and writes `mcpk_…` into the client config after email confirmation.
 
-**Cursor / Windsurf / VS Code** — `.cursor/mcp.json` (or the equivalent MCP JSON):
+**Cursor / Windsurf / VS Code** – `.cursor/mcp.json` (or the equivalent MCP JSON):
 
 ```json
 {
@@ -30,7 +30,7 @@ You can connect **without a key**. The agent signs you up and writes `mcpk_…` 
 
 Then ask the agent to sign you up (`request_signup` with your email). After you click the magic link, poll `check_signup` until `status: ready`. Restart the client if it does not hot-reload MCP config.
 
-**Claude Desktop** — `claude_desktop_config.json` (after you have a key):
+**Claude Desktop** – `claude_desktop_config.json` (after you have a key):
 
 ```json
 {
@@ -109,7 +109,7 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_fts` | European Commission FTS grants (Horizon, LIFE, …) |
 | `get_company_msig` | Court and Commercial Gazette (MSiG) |
 | `get_company_krz` | KRZ insolvency / restructuring (KRS or CEIDG NIP) |
-| `get_company_beneficiaries` | CRBR beneficial owners (KRS). Names only — **never PESEL** |
+| `get_company_beneficiaries` | CRBR beneficial owners (KRS). Names only – **never PESEL** |
 
 ### Account (skip `mcp_queries`)
 
@@ -170,7 +170,7 @@ See [compabase.com/pricing](https://compabase.com/pricing).
 
 ## Related
 
-- **[Compabase REST API](https://github.com/ContentWriterco/compabase-api)** — OpenAPI 3.1 (`v1.yaml`)
+- **[Compabase REST API](https://github.com/ContentWriterco/compabase-api)** – OpenAPI 3.1 (`v1.yaml`)
 - **[Interactive API docs](https://compabase.com/docs/)**
 - **[Interactive MCP docs](https://compabase.com/docs/mcp/)**
 - **[compabase.com](https://compabase.com)**
