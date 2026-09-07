@@ -3,36 +3,34 @@
 [![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05-blue)](https://modelcontextprotocol.io)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Compabase](https://img.shields.io/badge/Powered_by-Compabase-orange)](https://compabase.com)
+[![Docs](https://img.shields.io/badge/Docs-Interactive_Redoc-blue)](https://compabase.com/docs/mcp/)
 [![Free Tier](https://img.shields.io/badge/Free_Tier-Available-brightgreen)](https://compabase.com/mcp)
 
-**Compabase MCP** is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives AI assistants — Claude, Cursor, Windsurf, and any other MCP-compatible client — direct access to **3 million+ Polish companies** from the **KRS (National Court Register)** and **CEIDG** registries.
+**Compabase MCP** is a [Model Context Protocol](https://modelcontextprotocol.io) server that gives AI assistants — Claude, Cursor, Windsurf, VS Code, and any MCP-compatible client — direct access to **3 million+ Polish companies** from the **KRS (National Court Register)** and **CEIDG** registries, plus financials, people, rankings, and public-register enrichments (SUDOP, BZP, TED, URE, BDO, GPW, KRZ, CRBR, MSiG, EU funds).
 
-Ask your AI about Polish business in plain language: company financials, ownership structures, industry rankings, board members, and more — all backed by real registry data.
-
----
-
-## What Is This?
-
-This is the **MCP server for Polish companies data**. Instead of building API integrations yourself, you connect your AI assistant to the Compabase MCP endpoint and talk to it naturally:
-
-> *"Who are the top 10 manufacturing companies in Silesia by revenue?"*
-> *"Show me the financial history of Orlen over the last 5 years."*
-> *"How many active logistics companies are there in Mazovia?"*
-> *"Who sits on the board of PKN Orlen?"*
-
-The AI handles tool selection and query construction. You get real answers from real Polish business registry data.
+Ask in plain language. The model maps prompts to structured tools over Streamable HTTP (JSON-RPC 2.0).
 
 ---
 
 ## Quick Start
 
-### 1. Get an MCP Key
+You can connect **without a key**. The agent signs you up and writes `mcpk_…` into the client config after email confirmation.
 
-[Sign up at compabase.com/mcp →](https://compabase.com/mcp) and generate a free MCP key (`mcpk_...`).
+**Cursor / Windsurf / VS Code** — `.cursor/mcp.json` (or the equivalent MCP JSON):
 
-### 2. Connect Your AI Client
+```json
+{
+  "mcpServers": {
+    "compabase": {
+      "url": "https://compabase.com/api/mcp"
+    }
+  }
+}
+```
 
-**Cursor** — add to `.cursor/mcp.json`:
+Then ask the agent to sign you up (`request_signup` with your email). After you click the magic link, poll `check_signup` until `status: ready`. Restart the client if it does not hot-reload MCP config.
+
+**Claude Desktop** — `claude_desktop_config.json` (after you have a key):
 
 ```json
 {
@@ -47,177 +45,109 @@ The AI handles tool selection and query construction. You get real answers from 
 }
 ```
 
-**Claude Desktop** — add to `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "compabase": {
-      "url": "https://compabase.com/api/mcp",
-      "headers": {
-        "Authorization": "Bearer mcpk_YOUR_KEY_HERE"
-      }
-    }
-  }
-}
-```
-
-**Generic MCP client**
+Keys can also be created in [Integrations → MCP](https://compabase.com/integrations?tab=mcp). MCP keys (`mcpk_…`) are separate from REST API keys (`cb_…`).
 
 | Field | Value |
 |-------|-------|
-| Endpoint | `https://compabase.com/api/mcp` |
-| Authentication | `Authorization: Bearer <mcpk_...>` |
+| Endpoint | `POST https://compabase.com/api/mcp` |
+| Authentication | `Authorization: Bearer mcpk_…` or `X-API-Key: mcpk_…` (optional until after signup) |
 | Protocol | MCP Streamable HTTP (JSON-RPC 2.0) |
-| MCP Version | `2024-11-05` |
-
-### 3. Start Asking
-
-Once connected, just talk to your AI assistant about Polish companies:
-
-```
-"What were Allegro's revenues in 2022, 2023, and 2024?"
-"Find active e-commerce companies in Warsaw with revenue over 50M PLN."
-"Who owns and manages LPP SA?"
-```
+| MCP version | `2024-11-05` |
+| Server | `compabase` **1.6.2** |
 
 ---
 
-## Available Tools
+## Example prompts
 
-The Compabase MCP server exposes **6 structured tools**. Your AI client selects the right tool automatically based on your question.
-
-### `search_companies`
-
-**Search and filter Polish companies.** Returns up to 50 results with key financial metrics per company.
-
-Supports filtering by: name, KRS, NIP, city, county, voivodeship, postal code, PKD industry code (primary or any), legal form, revenue, net profit, operating profit, EBITDA, total assets, share capital, estimated value, active/inactive status, email/website presence, and fiscal year.
-
-Monetary filters default to PLN; set `currency` to `usd` or `eur` to use pre-converted columns.
-
-```
-"Top 20 construction companies in Małopolska by revenue"
-"Active spółka z o.o. companies in Poznań with EBITDA over 5M PLN"
-"Companies with PKD 62.01.Z (software development) in Wrocław"
-```
+- Find active IT companies in Warsaw with revenue over 5 million PLN.
+- What is the latest revenue and net profit of Allegro?
+- List board members of the company with KRS 0000028860.
+- How many active companies in mazowieckie have primary PKD starting with 62?
+- What is the median revenue in PKD section J?
+- Is Orlen listed on GPW? What is the ticker and P/E?
 
 ---
 
-### `count_companies`
+## Available tools
 
-**Count companies matching a filter set.** Returns a single number without fetching rows — ideal for "how many" and market sizing questions.
+Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/call` and `params.name` set to the tool name. Identify a company with `name`, `krs`, or `nip` when a tool accepts them. Monetary filters default to PLN.
 
-```
-"How many active logistics companies are registered in Poland?"
-"What share of Warsaw companies have a website?"
-"How many companies reported revenue over 100M PLN in 2024?"
-```
+Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
----
+### Onboarding (no key)
 
-### `get_company`
+| Tool | Purpose |
+|------|---------|
+| `request_signup` | Send a magic-link email; returns `setup_id` |
+| `check_signup` | Poll until email confirmed; returns `mcp_key` **once** |
+| `list_plans` | Billing plans and limits; then `upgrade_plan` |
 
-**Full company profile by KRS or NIP.** Returns name, address, legal identifiers (KRS/NIP/REGON), latest financial metrics, PKD activity list, registration and closure dates.
+### Company data
 
-```
-"Give me the full profile of Allegro — KRS 0000627860"
-"What is Orlen's NIP, address, and primary business activity?"
-```
+| Tool | Purpose |
+|------|---------|
+| `search_companies` | Filter KRS companies (name, PKD, city, voivodeship, financials, status, contacts). Up to 50 rows. Does not browse JDG. |
+| `count_companies` | Count matching KRS companies (same filters, no sort/limit) |
+| `get_company` | One profile + headline financials for the **latest** filed period |
+| `get_financials` | Full P&L / balance-sheet metrics per fiscal period |
+| `get_company_people` | Board, shareholders, proxies, other roles |
+| `get_company_rankings` | Revenue rank in PKD / region / Poland |
+| `get_financial_stats` | Sector/region/PKD aggregates (median, p25–p90, n, …) |
+| `execute_sql` | Read-only `SELECT` / `WITH … SELECT` for custom joins |
 
----
+### Register enrichments
 
-### `get_financials`
+| Tool | Source |
+|------|--------|
+| `get_company_sudop` | SUDOP public aid / de minimis (NIP) |
+| `get_company_bzp` | BZP procurement awards and buyer notices (NIP) |
+| `get_company_ted` | TED EU-threshold tenders (NIP) |
+| `get_company_ure` | URE energy concessions (NIP) |
+| `get_company_bdo` | BDO waste / packaging register (NIP) |
+| `get_company_gpw` | GPW / NewConnect / GlobalConnect listing + delayed quotes |
+| `get_company_fe` | European Funds (MFiPR lists, cohesion) |
+| `get_company_fts` | European Commission FTS grants (Horizon, LIFE, …) |
+| `get_company_msig` | Court and Commercial Gazette (MSiG) |
+| `get_company_krz` | KRZ insolvency / restructuring (KRS or CEIDG NIP) |
+| `get_company_beneficiaries` | CRBR beneficial owners (KRS). Names only — **never PESEL** |
 
-**Historical financial statements for a single company.** Returns all available P&L and balance sheet metrics broken down by fiscal year/period, in PLN.
+### Account (skip `mcp_queries`)
 
-Includes: `revenue_total`, `profit_net`, `profit_sales`, `ebitda`, `total_assets`, `currency`, fiscal period dates.
-
-```
-"Show me PKN Orlen's revenue and net profit for 2020–2024"
-"What has Dino Polska's EBITDA trend been over the last 4 years?"
-```
-
----
-
-### `get_company_people`
-
-**Board members, shareholders, and proxies for a company.** Returns display names, role labels, and relationship types (management / ownership / other).
-
-```
-"Who is on the supervisory board of CD Projekt?"
-"List all shareholders of LPP SA"
-"Who are the proxies authorized to act for Allegro?"
-```
-
----
-
-### `execute_sql`
-
-**Read-only SQL SELECT** against the Compabase database. Used by the AI for complex aggregations, multi-table joins, and calculations that the structured tools cannot express.
-
-> This tool is invoked automatically by the AI when needed — you do not call it directly.
-
----
-
-## Use Cases
-
-### Polish Business Intelligence for AI Assistants
-
-Connect Compabase MCP to turn any AI assistant into a **Polish business analyst**:
-
-- **Market research** — find all companies in a sector, filter by size, location, and activity
-- **Competitive analysis** — compare revenue, EBITDA, and asset growth across competitors in an industry
-- **Due diligence** — retrieve ownership structures, management teams, and multi-year financial statements
-- **Lead generation** — filter active companies by PKD, voivodeship, revenue range, and contact availability
-- **Company monitoring** — check legal status, recent financials, and registry changes
-
-### MCP for Polish Business Data in Agentic Workflows
-
-Compabase MCP is built for **agentic AI workflows** where the model needs to query Polish company data autonomously:
-
-- Cursor agents building business dashboards
-- Claude researching Polish market opportunities
-- Custom agents doing automated due diligence on target companies
-- LLM pipelines that need to enrich datasets with Polish registry information
-
-### Polish Companies MCP — What Data Is Covered
-
-| Data Type | Source | Coverage |
-|-----------|--------|----------|
-| Company profiles | KRS + CEIDG | 3M+ entities |
-| Financial statements | KRS e-filings (eKRS) | P&L + balance sheet, multi-year |
-| Ownership structures | KRS | Shareholders, holding %, values |
-| Management & roles | KRS | Board members, proxies, supervisory boards |
-| PKD industry codes | GUS classification | Full PKD 2007 hierarchy |
-| Geographic data | KRS + CEIDG | Voivodeship, city, postal code, county |
+| Tool | Purpose |
+|------|---------|
+| `get_usage` | Period usage: `mcp_queries`, `api_requests`, `export_companies`, `ask_ai_credits`, `watchlist_companies` |
+| `get_plan` | Active plan, limits, prepaid credit, reset date |
+| `list_watchlist` / `add_to_watchlist` / `remove_from_watchlist` / `batch_add_to_watchlist` | Watchlist (KRS or NIP, including CEIDG) |
+| `list_api_keys` / `create_api_key` / `delete_api_key` | REST keys (`cb_…`) |
+| `list_mcp_keys` / `create_mcp_key` / `delete_mcp_key` | MCP keys (`mcpk_…`) |
+| `export_companies` | Bulk CSV / XLSX / JSON (up to 500 rows). Uses the **export** meter, not `mcp_queries` |
+| `upgrade_plan` | Stripe Checkout URL (`pro` / `scale`) |
+| `set_webhook_url` | Watchlist change webhooks |
+| `get_byok_keys` / `set_byok_key` / `delete_byok_key` | BYOK (OpenAI / Claude / Gemini), Pro+ |
+| `set_notification_preferences` | Email alerts for watchlist changes |
 
 ---
 
-## Authentication
+## Quota
 
-All requests require an MCP key sent as a Bearer token:
+**Data tools** (search, financials, enrichments, SQL): each successful `tools/call` consumes one `mcp_queries` unit.
 
-```
-Authorization: Bearer mcpk_YOUR_KEY_HERE
-```
+**Account tools** skip `mcp_queries`. `export_companies` consumes `export_companies` instead.
 
-MCP keys are separate from REST API keys. Generate them at [compabase.com/mcp](https://compabase.com/mcp).
+`initialize`, `tools/list`, and `ping` do not consume quota. Limits reset with the billing period.
 
----
+| Plan | MCP queries / month | API requests | Exports |
+|------|---------------------|--------------|---------|
+| Free | 10 | 100 | 50 |
+| Pro | 50 | 5 000 | 1 000 |
+| Scale | 1 000 | 100 000 | 20 000 |
+| Enterprise | Custom | Custom | Custom |
 
-## Plans & Quota
-
-Each MCP key has a monthly query quota. Every `tools/call` invocation counts as one query.
-
-**10 MCP queries per month are free.** For more queries, upgrade to a higher plan.
-
-See [compabase.com/pricing](https://compabase.com/pricing) for details.
+See [compabase.com/pricing](https://compabase.com/pricing).
 
 ---
 
-## Protocol Details
-
-The Compabase MCP server implements the **MCP Streamable HTTP** transport over JSON-RPC 2.0.
+## Protocol
 
 | Property | Value |
 |----------|-------|
@@ -226,24 +156,24 @@ The Compabase MCP server implements the **MCP Streamable HTTP** transport over J
 | Protocol version | `2024-11-05` |
 | Capabilities | `tools` |
 | Server name | `compabase` |
-| Server version | `1.0.0` |
-
-Supported JSON-RPC methods:
+| Server version | `1.6.2` |
 
 | Method | Description |
 |--------|-------------|
-| `initialize` | Handshake and capability negotiation |
-| `tools/list` | List all available tools and their schemas |
+| `initialize` | Handshake |
+| `tools/list` | Tools and schemas |
 | `tools/call` | Execute a tool |
-| `ping` | Health / keep-alive |
+| `ping` | Keep-alive |
+| `notifications/initialized` | Client ready |
 
 ---
 
 ## Related
 
-- **[Compabase REST API](https://github.com/ContentWriterco/Compabase-API)** — full REST API for Polish companies (KRS & CEIDG) with OpenAPI spec
-- **[Interactive API Docs](https://compabase.com/docs/)** — try the REST endpoints in the browser
-- **[compabase.com](https://compabase.com)** — browse Polish companies, search by sector, region, and financials, chat with AI about Polish business
+- **[Compabase REST API](https://github.com/ContentWriterco/compabase-api)** — OpenAPI 3.1 (`v1.yaml`)
+- **[Interactive API docs](https://compabase.com/docs/)**
+- **[Interactive MCP docs](https://compabase.com/docs/mcp/)**
+- **[compabase.com](https://compabase.com)**
 
 ---
 

@@ -1,0 +1,2401 @@
+openapi: 3.1.0
+info:
+  title: Compabase MCP
+  version: 1.6.2
+  description: |
+    ### Introduction
+    Compabase MCP exposes Polish company registry data, financial statements, rankings,
+    and people to AI agents through the [Model Context Protocol](https://modelcontextprotocol.io/).
+    Clients such as Cursor, Claude Desktop, Windsurf, VS Code, and custom agents call structured
+    tools over Streamable HTTP (JSON-RPC 2.0).
+
+    ### Endpoint
+    `https://compabase.com/api/mcp`
+
+    Protocol: **MCP Streamable HTTP** (JSON-RPC 2.0). Server name `compabase`, protocol version
+    `2024-11-05`. Supported methods: `initialize`, `tools/list`, `tools/call`, `ping`,
+    `notifications/initialized`.
+
+    ### Authentication
+    You can connect **without a key** to create an account from the agent:
+
+    - Call `request_signup` with the user's email (sends a magic link).
+    - After they click the email, poll `check_signup` until `status: ready`.
+    - Save the returned `mcp_key` (`mcpk_…`) in the client MCP config. After the email
+      is confirmed, the key is issued for you.
+
+    After that, send the key on every request:
+
+    - Preferred: `Authorization: Bearer mcpk_…`
+    - Alternative: `X-API-Key: mcpk_…`
+
+    Keys can also be created in
+    <a href="/integrations?tab=mcp" target="_blank" rel="noopener noreferrer">Integrations → MCP</a>.
+    MCP keys (`mcpk_…`) are separate from REST API keys. Keys are stored as SHA-256 hashes and
+    can be revoked immediately from the portal.
+
+    ### Quota accounting
+    **Data tools** (company search, financials, enrichments, SQL): each successful `tools/call`
+    consumes one unit of the `mcp_queries` meter for your plan.
+    **Account tools** (usage, plan, watchlist, keys, webhooks, BYOK, notifications) skip
+    `mcp_queries`. `export_companies` is listed under Account but consumes the
+    `export_companies` meter, not `mcp_queries`.
+    `initialize`, `tools/list`, and `ping` also skip the meter. Limits reset with your billing
+    period; see the <a href="/pricing" target="_blank" rel="noopener noreferrer">pricing page</a>.
+    When the limit is reached, data tool calls return a JSON-RPC error with used/limit counts.
+
+    ### Example prompts
+    - Find active IT companies in Warsaw with revenue over 5 million PLN.
+    - What is the latest revenue and net profit of Allegro?
+    - List board members of the company with KRS 0000028860.
+    - How many active companies in mazowieckie have primary PKD starting with 62?
+    - What is the median revenue in PKD section J?
+    - Is Orlen listed on GPW? What is the ticker and P/E?
+
+servers:
+  - url: https://compabase.com/api/mcp
+    description: MCP Streamable HTTP endpoint
+
+tags:
+  - name: Quickstart
+    description: |
+      Connect your AI client to the Compabase MCP endpoint. You can start **without a key** —
+      ask the agent to sign you up (`request_signup`); after email confirmation it writes
+      `mcpk_…` into the client config. You can also create a key in
+      <a href="/integrations?tab=mcp" target="_blank" rel="noopener noreferrer">Integrations → MCP</a>.
+      Restart the client if it does not hot-reload MCP config. After connecting, ask in natural
+      language; the model maps prompts to tool calls.
+
+      The Cursor / Claude / agents recipes below show how to configure the client.
+      Live traffic always goes to `POST https://compabase.com/api/mcp`.
+  - name: Onboarding
+    description: |
+      Public tools; no MCP key required. An agent can create an account
+      and receive an MCP key after the user confirms email. `upgrade_plan` still
+      requires a key and returns a real Stripe Checkout URL.
+  - name: Tools
+    description: |
+      Structured tools exposed via JSON-RPC `tools/call`. Paths below are documentation labels;
+      every call goes to `POST https://compabase.com/api/mcp` with
+      `method: tools/call` and `params.name` set to the tool name.
+
+      Identify a company with `name`, `krs`, or `nip` when a tool accepts them. Monetary filters
+      default to PLN unless noted. City values from KRS are typically uppercase; voivodeships lowercase.
+
+      Register enrichments: `get_company_sudop` (public aid / de minimis), `get_company_bzp` (procurement),
+      `get_company_ted` (EU TED tenders), `get_company_ure` (energy concessions), `get_company_bdo` (BDO waste/packaging),
+      `get_company_gpw` (Warsaw Stock Exchange listings and delayed quotes),
+      `get_company_msig` (Court and Commercial Gazette), `get_company_krz` (insolvency),
+      `get_company_beneficiaries` (CRBR for KRS companies; all names, never PESEL).
+  - name: Account
+    description: |
+      Account management: usage, plan, watchlist, API/MCP keys, webhooks, BYOK, notifications.
+      These skip the `mcp_queries` meter. `export_companies` consumes the export quota instead.
+      All calls go through the same `POST https://compabase.com/api/mcp` endpoint with
+      `method: tools/call`.
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /setup/cursor:
+    get:
+      tags: [Quickstart]
+      summary: Cursor / Windsurf / VS Code
+      operationId: connect_cursor
+      description: |
+        Add a remote MCP server entry to your project or user MCP config
+        (Cursor: `.cursor/mcp.json`; VS Code / Copilot and Windsurf use the same JSON shape).
+        You can connect **without a key**. Ask the agent to sign you up (`request_signup`);
+        after you click the email it writes `mcpk_…` into this config. Restart the client
+        if it does not hot-reload MCP config.
+        The sample on the right is a local config file. Compabase does not serve this path over HTTP.
+      security: []
+      x-codeSamples:
+        - lang: json
+          label: mcp.json
+          source: |
+            {
+              "mcpServers": {
+                "compabase": {
+                  "url": "https://compabase.com/api/mcp"
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Example client config (local file)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpClientConfig'
+              example:
+                mcpServers:
+                  compabase:
+                    url: https://compabase.com/api/mcp
+
+  /setup/claude:
+    get:
+      tags: [Quickstart]
+      summary: Claude Desktop
+      operationId: connect_claude
+      description: |
+        Edit `claude_desktop_config.json` and restart Claude Desktop.
+        macOS: `~/Library/Application Support/Claude/` ·
+        Windows: `%APPDATA%\Claude\`.
+        The sample on the right is a local config file. Compabase does not serve this path over HTTP.
+      security: []
+      x-codeSamples:
+        - lang: json
+          label: claude_desktop_config.json
+          source: |
+            {
+              "mcpServers": {
+                "compabase": {
+                  "url": "https://compabase.com/api/mcp",
+                  "headers": {
+                    "Authorization": "Bearer mcpk_YOUR_KEY_HERE"
+                  }
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Example client config (local file)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpClientConfig'
+              example:
+                mcpServers:
+                  compabase:
+                    url: https://compabase.com/api/mcp
+                    headers:
+                      Authorization: Bearer mcpk_YOUR_KEY_HERE
+
+  /setup/agents:
+    get:
+      tags: [Quickstart]
+      summary: Custom agents
+      operationId: connect_agents
+      description: |
+        Any MCP client with Streamable HTTP can connect. Typical flow:
+        `initialize` → `notifications/initialized` → `tools/list` → `tools/call`.
+        Frameworks such as LangChain / LangGraph MCP adapters and LlamaIndex use the same URL
+        and auth headers. Each successful **data** `tools/call` consumes one MCP query from your
+        plan; account tools skip that meter. Live traffic always hits
+        `POST https://compabase.com/api/mcp` (samples on the right).
+      security: []
+      x-codeSamples:
+        - lang: bash
+          label: curl tools/list
+          source: |
+            curl -s https://compabase.com/api/mcp \
+              -H "Authorization: Bearer mcpk_YOUR_KEY_HERE" \
+              -H "Content-Type: application/json" \
+              -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 2,
+              "method": "tools/call",
+              "params": {
+                "name": "search_companies",
+                "arguments": {
+                  "pkd": "62",
+                  "city": "WARSZAWA",
+                  "revenue_min": 5000000,
+                  "limit": 10
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Example JSON-RPC result from POST /api/mcp
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                jsonrpc: "2.0"
+                id: 1
+                result:
+                  tools:
+                    - name: search_companies
+
+  # ---------------------------------------------------------------------------
+  # Public onboarding tools (no MCP key)
+  # ---------------------------------------------------------------------------
+
+  /tools/request_signup:
+    post:
+      tags: [Onboarding]
+      summary: request_signup
+      operationId: request_signup
+      security: []
+      description: |
+        Start account setup. Sends a magic-link email. Poll `check_signup` with `setup_id`
+        until the user clicks the link. The assistant then receives an MCP key;
+        there is nothing to copy from the portal.
+
+        **No MCP key required. Does not consume quota.**
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "request_signup",
+                "arguments": { "email": "you@company.com", "client": "cursor", "locale": "en" }
+              }
+            }
+      responses:
+        '200':
+          description: Pending setup session
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                setup_id: "a1b2c3..."
+                status: pending
+                poll_after_seconds: 3
+                expires_in_minutes: 1440
+
+  /tools/check_signup:
+    post:
+      tags: [Onboarding]
+      summary: check_signup
+      operationId: check_signup
+      security: []
+      description: |
+        Poll `request_signup`. When the user has confirmed email, returns `mcp_key` **once**
+        and `cursor_mcp_json` to write to the client config. Then reload the MCP server.
+
+        **No MCP key required. Does not consume quota.**
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "check_signup",
+                "arguments": { "setup_id": "a1b2c3..." }
+              }
+            }
+      responses:
+        '200':
+          description: pending, ready, expired, or already_delivered
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                status: ready
+                mcp_key: "mcpk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+                cursor_mcp_json:
+                  mcpServers:
+                    compabase:
+                      url: https://compabase.com/api/mcp
+                      headers:
+                        Authorization: Bearer mcpk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+
+  /tools/list_plans:
+    post:
+      tags: [Onboarding]
+      summary: list_plans
+      operationId: list_plans
+      security: []
+      description: |
+        List Compabase billing plans and limits. After sign-up, call `upgrade_plan` with
+        `plan_id` to get a Stripe Checkout URL.
+
+        **No MCP key required. Does not consume quota.**
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": { "name": "list_plans", "arguments": {} }
+            }
+      responses:
+        '200':
+          description: Plan catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                plans:
+                  - id: free
+                    display_name: Free
+                    price_pln_monthly: 0
+                    export_limit_monthly: 50
+                    api_limit_monthly: 100
+                    ask_ai_credits_monthly: 3
+                    watchlist_limit: 10
+                    mcp_queries_monthly: 10
+                    allow_byok: false
+                    is_contact_sales: false
+                  - id: pro
+                    display_name: Pro
+                    price_pln_monthly: 99
+                    export_limit_monthly: 1000
+                    api_limit_monthly: 5000
+                    ask_ai_credits_monthly: 20
+                    watchlist_limit: 50
+                    mcp_queries_monthly: 50
+                    allow_byok: true
+                    is_contact_sales: false
+                  - id: scale
+                    display_name: Scale
+                    price_pln_monthly: 999
+                    export_limit_monthly: 20000
+                    api_limit_monthly: 100000
+                    ask_ai_credits_monthly: 300
+                    watchlist_limit: 1000
+                    mcp_queries_monthly: 1000
+                    allow_byok: true
+                    is_contact_sales: false
+                  - id: enterprise
+                    display_name: Enterprise
+                    price_pln_monthly: null
+                    export_limit_monthly: null
+                    api_limit_monthly: null
+                    ask_ai_credits_monthly: null
+                    watchlist_limit: null
+                    mcp_queries_monthly: null
+                    allow_byok: true
+                    is_contact_sales: true
+                message: "Free includes MCP with a small monthly query limit after sign-up. After the user confirms email, call upgrade_plan with plan_id 'pro' or 'scale' to get a Stripe checkout URL."
+
+  /tools/search_companies:
+    post:
+      tags: [Tools]
+      summary: search_companies
+      operationId: search_companies
+      description: |
+        Search and filter Polish KRS companies (spółki). Compabase also holds the full CEIDG/JDG register;
+        this tool does not browse JDG — those without a public contact email are hidden because of RODO.
+        Default `fields=summary` returns compact rows
+        (name, NIP, KRS, location, PKD, latest financials, email/phone/website).
+        `fields=contacts_only` is a CRM list. `fields=full` returns every company_search column
+        and may exceed MCP client size limits.
+
+        Use for rankings, sector filters, city/county/region browsing, name search, or NIP/KRS lookup.
+        For lookup by name/KRS/NIP, omit `year`. Use `year` only for sector/ranking browse.
+        Sparse results in JDG-dominated PKDs include a `hint` (full CEIDG is in the database; listing is RODO-gated).
+        Do not call `export_companies` just to get a handful of emails or phones.
+
+        **Example prompts:** “Find IT companies (PKD 62) in Warsaw with revenue over 5 million PLN.”
+        · “Top 20 companies by EBITDA in wielkopolskie that are still active.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchCompaniesArgs'
+            example:
+              pkd: "62"
+              city: "WARSZAWA"
+              revenue_min: 5000000
+              is_active: true
+              sort_by: revenue_total
+              fields: summary
+              limit: 20
+      responses:
+        '200':
+          description: Tool result (JSON text content from MCP)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                fields: summary
+                returned_count: 1
+                companies:
+                  - name: Example Sp. z o.o.
+                    nip: "5250000000"
+                    krs: "0000123456"
+                    city: Warszawa
+                    county: M.st. Warszawa
+                    region: mazowieckie
+                    primary_pkd: 62.01.Z
+                    revenue_total: 12500000
+                    profit_net: 890000
+                    email: biuro@example.pl
+                    phone: "221234567"
+                    website: example.pl
+
+  /tools/count_companies:
+    post:
+      tags: [Tools]
+      summary: count_companies
+      operationId: count_companies
+      description: |
+        Count KRS companies matching the same filter family as `search_companies` (without sort/limit).
+        Does not count JDG in this tool (full CEIDG is in Compabase; listing is RODO-gated). Returns a single number; there is no company list.
+        Sparse or zero counts in JDG-dominated PKDs include a `hint`.
+
+        **Example prompts:** “How many active companies in mazowieckie have primary PKD starting with 62?”
+        · “Count companies with revenue between 1 and 10 million PLN in Kraków.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountCompaniesArgs'
+            example:
+              region: mazowieckie
+              pkd: "62"
+              is_active: true
+      responses:
+        '200':
+          description: Count result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+              example:
+                count: 1842
+
+  /tools/get_company:
+    post:
+      tags: [Tools]
+      summary: get_company
+      operationId: get_company
+      description: |
+        Registry profile and headline financials for **one** latest filed period
+        (`financials.period_to`). Revenue, profit, costs, and assets in this response are that
+        same period — there is no nested summary from a different year. Contacts (email, phone,
+        website) are included when on record. NIP lookup also returns a CEIDG/JDG firm when it
+        has a public contact email (RODO). Full balance-sheet line items and earlier years
+        are in `get_financials`.
+
+        **Example prompts:** “Give me a company profile for Allegro.” · “Look up KRS 0000028860.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              name: Allegro
+      responses:
+        '200':
+          description: Company profile
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                name: Allegro sp. z o.o.
+                krs: "0000000000"
+                nip: "5250000000"
+                financial_period_to: "2025-12-31"
+                revenue_total: 1000000000
+                profit_net: 50000000
+                financials:
+                  period_to: "2025-12-31"
+                  revenue_total: 1000000000
+                  profit_net: 50000000
+                has_email: true
+                contacts:
+                  email: kontakt@allegro.pl
+                  phone: "226000000"
+                  website: allegro.pl
+
+  /tools/get_financials:
+    post:
+      tags: [Tools]
+      summary: get_financials
+      operationId: get_financials
+      description: |
+        Full financial statement metrics per fiscal period: cash, inventories, receivables,
+        liabilities, equity, cost breakdown, revenue lines, and other statement columns.
+
+        **Example prompts:** “Show cash, liabilities, and equity from 2019 to 2023.”
+        · “What was net profit and total assets year by year?”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CompanyIdentityArgs'
+                - type: object
+                  properties:
+                    year_from:
+                      type: integer
+                      description: Earliest fiscal year (e.g. 2019).
+                      example: 2019
+                    year_to:
+                      type: integer
+                      description: Latest fiscal year (e.g. 2023).
+                      example: 2023
+            example:
+              krs: "0000028860"
+              year_from: 2019
+              year_to: 2023
+      responses:
+        '200':
+          description: Financial periods
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                periods:
+                  - year: 2023
+                    revenue_total: 120000000
+                    profit_net: 8000000
+                    cash_and_equivalents: 15000000
+
+  /tools/get_company_people:
+    post:
+      tags: [Tools]
+      summary: get_company_people
+      operationId: get_company_people
+      description: |
+        People associated with a company: board members, shareholders, proxies, and other roles.
+        Returns display names, role labels, and relationship types.
+
+        **Example prompts:** “Who sits on the management board?” · “List shareholders for this NIP.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CompanyIdentityArgs'
+                - type: object
+                  properties:
+                    relationship_type:
+                      type: string
+                      description: Filter, e.g. `management` or `ownership`. Omit for all.
+                      example: management
+            example:
+              nip: "5250000000"
+              relationship_type: management
+      responses:
+        '200':
+          description: People list
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                people:
+                  - display_name: Jan Kowalski
+                    role: Prezes zarządu
+                    relationship_type: management
+
+  /tools/get_company_rankings:
+    post:
+      tags: [Tools]
+      summary: get_company_rankings
+      operationId: get_company_rankings
+      description: |
+        Revenue rank positions within industry (PKD), region (voivodeship), and all of Poland.
+        Returns one row per scope: `pkd_full`, `pkd_division`, `pkd_section`, `region`, `country`.
+
+        **Example prompts:** “Where does this company rank by revenue in Poland and in its industry?”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CompanyIdentityArgs'
+                - type: object
+                  properties:
+                    scope_type:
+                      type: string
+                      enum: [pkd_full, pkd_division, pkd_section, region, country]
+                      description: Optional. Filter to a single scope. Omit for all.
+            example:
+              name: Allegro
+              scope_type: country
+      responses:
+        '200':
+          description: Ranking rows
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                rankings:
+                  - scope_type: country
+                    rank: 12
+                    n_companies: 500000
+
+  /tools/get_financial_stats:
+    post:
+      tags: [Tools]
+      summary: get_financial_stats
+      operationId: get_financial_stats
+      description: |
+        Precomputed aggregate statistics for a sector, region, PKD branch, or country:
+        median, p25/p75/p90, winsorized mean, mean, total, n_companies, min/max.
+        Median and `winsor_mean` are the usual summary stats; raw mean is skewed by outliers. `cost_wages` is PLN-only.
+
+        **Example prompts:** “What is the median revenue in PKD section J?”
+        · “Compare average net profit in mazowieckie vs Poland overall.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dimension_type:
+                  type: string
+                  enum: [country, pkd_section, pkd_division, pkd_class, pkd_full, region, county, city]
+                  description: Granularity of the aggregate.
+                  example: pkd_section
+                dimension_key:
+                  type: string
+                  description: Key for the dimension, e.g. `PL`, `J`, `62`, `mazowieckie`. Prefix match applied.
+                  example: J
+                metric:
+                  type: string
+                  enum: [revenue_total, profit_net, total_assets, cost_wages]
+                  description: Financial metric. Omit to return all metrics.
+                  example: revenue_total
+                currency:
+                  type: string
+                  enum: [PLN, EUR, USD]
+                  description: Currency (default PLN). `cost_wages` is PLN-only.
+                  example: PLN
+            example:
+              dimension_type: pkd_section
+              dimension_key: J
+              metric: revenue_total
+              currency: PLN
+      responses:
+        '200':
+          description: Aggregate stats
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                median: 1200000
+                p25: 400000
+                p75: 3500000
+                n_companies: 42000
+
+  /tools/get_company_sudop:
+    post:
+      tags: [Tools]
+      summary: get_company_sudop
+      operationId: get_company_sudop
+      description: |
+        SUDOP public aid / de minimis: totals plus the full case list (amounts, grantor, purpose).
+        Keyed by NIP. If several KRS entities share the same NIP, the tool still returns SUDOP for that NIP.
+
+        **Example prompts:** “What public aid has this company received?” · “List SUDOP aid cases for NIP …”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              nip: "7392954369"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `sudop` snapshot + cases
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000097877"
+                nip: "7392954369"
+                sudop:
+                  checked_at: "2026-08-05T18:33:30.496Z"
+                  has_aid: true
+                  cases_count: 3045
+                  total_nominal_pln: 601861882.22
+                  total_gross_pln: 596691851.24
+                  beneficiary_name: Zakład Gospodarki Odpadami Komunalnymi Spółka z o.o.
+                  source_url: https://sudop.uokik.gov.pl
+                  cases:
+                    - granted_at: "2026-07-15"
+                      grantor_name: BURMISTRZ MIASTA SZCZYTNO
+                      purpose_name: pomoc stanowiąca rekompensatę za realizację usług świadczonych w ogólnym interesie gospodarczym
+                      form_name: refundacja
+                      gross_pln: 274867.77
+                      nominal_pln: 274867.77
+
+  /tools/get_company_fe:
+    post:
+      tags: [Tools]
+      summary: get_company_fe
+      operationId: get_company_fe
+      description: |
+        European Funds (Fundusze Europejskie) projects for one company — official MFiPR lists,
+        EU co-financing, programme and dates. Keyed by NIP after unique name match.
+        This is cohesion/shared-management funds, not TED procurement, not FTS Commission grants,
+        and not SUDOP state aid.
+
+        **Example prompts:** "What EU-funded projects does this company have?" · "Fundusze Europejskie for NIP …"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000028860"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `fe` snapshot + projects
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000028860"
+                nip: "7740001454"
+                fe:
+                  checked_at: "2026-08-20T12:00:00.000Z"
+                  projects_count: 5
+                  total_eu_pln: 15000000
+                  total_project_pln: 25000000
+                  source_url: https://www.funduszeeuropejskie.gov.pl
+                projects_list:
+                  - project_name: "Modernizacja infrastruktury energetycznej"
+                    programme: "FEnIKS 2021-2027"
+                    eu_cofinancing_pln: 3000000
+                    start_date: "2023-01-15"
+                    end_date: "2025-12-31"
+
+  /tools/get_company_fts:
+    post:
+      tags: [Tools]
+      summary: get_company_fts
+      operationId: get_company_fts
+      description: |
+        European Commission Financial Transparency System awards for one company — Horizon, LIFE,
+        Erasmus and other direct/indirect-management grants. Keyed by NIP (VAT).
+        Not cohesion funds (use `get_company_fe`) and not TED procurement.
+
+        **Example prompts:** "Any EU Commission grants for this company?" · "FTS awards for NIP …"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000028860"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `fts` snapshot + awards
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000028860"
+                nip: "7740001454"
+                fts:
+                  checked_at: "2026-08-20T12:00:00.000Z"
+                  awards_count: 3
+                  total_eur: 500000
+                  total_pln: 2175000
+                  source_url: https://ec.europa.eu/budget/financial-transparency-system/
+                awards_list:
+                  - year: 2024
+                    programme: "Horizon Europe"
+                    amount_eur: 200000
+                    subject: "Clean energy research"
+
+  /tools/get_company_bzp:
+    post:
+      tags: [Tools]
+      summary: get_company_bzp
+      operationId: get_company_bzp
+      description: |
+        BZP public procurement: award/notice totals plus the full award and buyer lists (`recent_awards`, `recent_as_buyer`).
+        Keyed by NIP. Shared-NIP companies still resolve to BZP for that NIP.
+
+        **Example prompts:** “Show public contracts won by this company.” · “BZP awards for NIP …”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              nip: "6481997718"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `bzp` aggregates + samples
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000540772"
+                nip: "6481997718"
+                bzp:
+                  checked_at: "2026-08-07T13:16:42.835Z"
+                  as_contractor_awards_count: 8280
+                  as_contractor_notices_count: 2927
+                  as_buyer_notices_count: 0
+                  as_contractor_awards_total_pln: 256455712.07
+                  first_publication_date: "2021-06-01"
+                  last_publication_date: "2026-08-06"
+                  source_url: https://ezamowienia.gov.pl/
+                  recent_awards:
+                    - bzp_number: "2026/BZP 00381206"
+                      notice_number: "2026/BZP 00381206/01"
+                      counterparty_name: Zespół Opieki Zdrowotnej w Dębicy
+                      cpv_code: "33140000-3 (Materiały medyczne)"
+                      award_value_pln: 21588.55
+                      publication_date: "2026-08-06T11:21:52.379Z"
+                  recent_as_buyer: []
+
+  /tools/get_company_ure:
+    post:
+      tags: [Tools]
+      summary: get_company_ure
+      operationId: get_company_ure
+      description: |
+        URE energy concessions: electricity, gas, heat, liquid fuels, plus pending applications.
+        Keyed by NIP. Totals plus the full item list (type, validity, PDF link).
+
+        **Example prompts:** “What URE concessions does this company hold?” · “Energy licences for NIP …”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000028860"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `ure` snapshot + items
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000028860"
+                nip: "7740001454"
+                ure:
+                  checked_at: "2026-08-16T12:00:00.000Z"
+                  has_concessions: true
+                  concessions_count: 12
+                  applications_count: 1
+                  active_count: 12
+                  items_count: 13
+                  source_url: https://www.ure.gov.pl
+                  items:
+                    - license_type: OPC
+                      kind: concession
+                      issued_at: "1998-12-16"
+                      valid_to: "2040-12-31"
+                      is_active: true
+
+  /tools/get_company_bdo:
+    post:
+      tags: [Tools]
+      summary: get_company_bdo
+      operationId: get_company_bdo
+      description: |
+        BDO waste and packaging register: registration number, EUP site count, activity flags,
+        and headquarters decisions with issue and validity dates. Keyed by NIP.
+
+        **Example prompts:** “Is this company in BDO?” · “BDO number for NIP …”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000028860"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `bdo` snapshot + HQ decisions
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000028860"
+                nip: "7740001454"
+                bdo:
+                  checked_at: "2026-08-20T12:00:00.000Z"
+                  has_entry: true
+                  bdo_number: "000007103"
+                  eup_count: 2177
+                  activity_flags: ["waste_generation", "waste_treatment"]
+                  source_url: https://rejestr-bdo.mos.gov.pl/Registry/Index
+                  items:
+                    - decision_sign: W-10/19
+                      issue_date: "2019-03-12"
+                      expiration_date: "2034-11-03"
+                      no_expiration: false
+                      issuing_authority: Marszałek Województwa Mazowieckiego
+                      kind_flags: ["waste_generation"]
+
+  /tools/get_company_gpw:
+    post:
+      tags: [Tools]
+      summary: get_company_gpw
+      operationId: get_company_gpw
+      description: |
+        Warsaw Stock Exchange listing: ticker, ISIN, market (GPW main / NewConnect / GlobalConnect),
+        last close and change, market cap, shares outstanding, EPS, P/E, dividend per share and yield.
+        Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars — not full OHLCV history.
+        Keyed by NIP.
+
+        **Example prompts:** “Is this company listed on GPW?” · “Ticker, last close and P/E for Orlen”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000028860"
+      responses:
+        '200':
+          description: "Wrapper with `registry_number`, `nip`, and `gpw` snapshot (or `gpw: null` if not listed)"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000028860"
+                nip: "7740001454"
+                gpw:
+                  checked_at: "2026-09-01T16:30:00.000Z"
+                  ticker: PKN
+                  isin: PLPKN0000018
+                  market: main
+                  listed_name: ORLEN
+                  shares_outstanding: 1163856079
+                  last_close: 78.12
+                  last_close_date: "2026-09-01"
+                  prev_close: 77.40
+                  change_abs: 0.72
+                  change_pct: 0.93
+                  market_cap: 90919000000
+                  last_volume: 1250000
+                  eps: 8.41
+                  pe_ratio: 9.29
+                  dividend_per_share: 4.15
+                  dividend_yield: 5.31
+                  dividend_year: 2025
+                  dividend_ex_date: "2025-08-13"
+                  source_url: https://www.gpw.pl/list-of-companies
+                  currency: PLN
+                  delayed_minutes: 15
+                  recent:
+                    - trade_date: "2026-09-01"
+                      open: 77.50
+                      high: 78.40
+                      low: 77.20
+                      close: 78.12
+                      volume: 1250000
+
+  /tools/get_company_ted:
+    post:
+      tags: [Tools]
+      summary: get_company_ted
+      operationId: get_company_ted
+      description: |
+        TED EU-threshold public procurement: awards as contractor and notices as buyer.
+        Keyed by NIP. Totals plus the full award/buyer notice lists.
+
+        **Example prompts:** “Any EU tenders for this company?” · “TED awards for NIP …”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000001764"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `ted` snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000001764"
+                nip: "5261003187"
+                ted:
+                  checked_at: "2026-08-17T12:00:00.000Z"
+                  as_winner_awards_count: 12
+                  as_buyer_notices_count: 0
+                  as_winner_awards_total_pln: 64504059.09
+                  as_winner_awards_total_usd: 16126014.77
+                  as_winner_awards_total_eur: 14828526.00
+                  source_url: https://ted.europa.eu/
+                  recent_awards:
+                    - publication_number: "564833-2026"
+                      award_value: 64504059.09
+                      award_value_usd: 16126014.77
+                      award_value_eur: 14828526.00
+                      amounts_currency: PLN
+                  recent_as_buyer: []
+
+  /tools/get_company_msig:
+    post:
+      tags: [Tools]
+      summary: get_company_msig
+      operationId: get_company_msig
+      description: |
+        Court and Commercial Gazette (MSiG) notices for one company.
+        Matched by KRS or NIP (creditor calls, dissolution, mergers, liquidation).
+
+        **Example prompts:** “Any MSiG notices for this company?” · “Gazette publications for this KRS.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000028860"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `msig` notices
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000028860"
+                nip: "5252674798"
+                msig:
+                  checked_at: "2026-08-12T10:00:00.000Z"
+                  notices_count: 2
+                  first_publication_date: "2024-03-11"
+                  last_publication_date: "2026-01-20"
+                  source_url: https://wyszukiwarka-msig.ms.gov.pl/
+                  items:
+                    - notice_number: "1234/2026"
+                      publication_date: "2026-01-20"
+                      notice_type: creditors_call
+                      title: Wezwanie wierzycieli
+                      monitor_number: "12/2026"
+
+  /tools/get_company_krz:
+    post:
+      tags: [Tools]
+      summary: get_company_krz
+      operationId: get_company_krz
+      description: |
+        KRZ insolvency / restructuring proceedings.
+        KRS companies via `company_krz`; sole proprietors via CEIDG KRZ by NIP.
+        Response includes `proceedings` (full list when present).
+
+        **Example prompts:** “Does this company have KRZ proceedings?” · “Any restructuring cases?”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000399876"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `krz` status + proceedings
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000399876"
+                nip: "6762449813"
+                krz:
+                  checked_at: "2026-07-31T06:05:44.836Z"
+                  has_proceedings: true
+                  has_active_proceedings: false
+                  proceedings_count: 509
+                  entity_name: "Małopolska Sieć Szerokopasmowa sp. z o.o."
+                  source_url: https://krz.ms.gov.pl/
+                  proceedings:
+                    - case_signature: WA/Gz-KRZ/194/2025
+                      proceeding_type_title: zażalenie na postanowienie/zarządzenie w przedmiocie otwarcia przyspieszonego postępowania układowego
+                      status: zakończone
+                      is_active: false
+                      registration_date: "2026-02-19"
+                      start_date: "2025-07-21"
+                      end_date: "2026-02-19"
+                      authority_name: null
+
+  /tools/get_company_beneficiaries:
+    post:
+      tags: [Tools]
+      summary: get_company_beneficiaries
+      operationId: get_company_beneficiaries
+      description: |
+        CRBR beneficial owners for a KRS company (spółki). Compabase returns these names for
+        every KRS company, same as zarząd and wspólnicy. PESEL is never in the payload;
+        age is `birth_year` only.
+
+        JDG (CEIDG) are a separate catalog: only firms with a public contact email appear
+        (`ceidg_chat`). A RODO objection or missing email removes that JDG from the catalog.
+        CRBR does not apply to JDG.
+
+        SQL: `company_crbr_public` / `company_crbr_beneficiaries_public`. Raw
+        `company_crbr_beneficiaries` is rejected.
+
+        **Example prompts:** “Who are the beneficial owners?” · “CRBR UBOs for this KRS.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000159161"
+      responses:
+        '200':
+          description: CRBR details for a KRS company (birth_year only; never PESEL)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000159161"
+                nip: "9542441248"
+                crbr:
+                  checked_at: "2026-08-05T21:28:29.091Z"
+                  has_beneficiaries: true
+                  beneficiaries_count: 46
+                  company_name: AKADEMICKI ZWIĄZEK SPORTOWY UNIWERSYTETU ŚLĄSKIEGO
+                  status: IstniejaInformacje
+                  source_url: https://www.podatki.gov.pl/crbr/
+                  beneficiaries:
+                    - display_name: JAN KOWALSKI
+                      birth_year: 1980
+                      citizenship_name: POLSKA
+                      rights_summary: CZŁONEK ZARZĄDU
+                      shares:
+                        - other_rights:
+                            kind_code: "001"
+                            kind_name: inna osoba fizyczna mająca wpływ na stowarzyszenie
+                            description: CZŁONEK ZARZĄDU
+                          direct_ownership: null
+                          indirect_ownership: null
+
+  /tools/execute_sql:
+    post:
+      tags: [Tools]
+      summary: execute_sql
+      operationId: execute_sql
+      description: |
+        Run a **read-only** SQL `SELECT` (or `WITH … SELECT`) against the Compabase database.
+        Use this for custom joins and multi-step aggregations the other tools cannot express.
+        Prefer dedicated tools (`search_companies`, `get_financials`, and similar) when they
+        cover the question — they return smaller, more predictable payloads.
+        CRBR names for KRS companies: `company_crbr_*_public` (all companies; birth_year only).
+        Raw `company_crbr_beneficiaries` is rejected. JDG people live in `ceidg_chat` (email required).
+
+        **Example prompts:** “Write SQL that groups companies by region and sums revenue for PKD 62.”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  description: A read-only SQL SELECT or WITH…SELECT statement.
+            example:
+              query: |
+                SELECT region, COUNT(*) AS n
+                FROM company_search
+                WHERE primary_pkd LIKE '62%'
+                GROUP BY region
+                ORDER BY n DESC
+                LIMIT 20
+      responses:
+        '200':
+          description: Query rows
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                rows:
+                  - region: mazowieckie
+                    n: 12000
+
+  # ---------------------------------------------------------------------------
+  # Account management tools (no quota cost)
+  # ---------------------------------------------------------------------------
+
+  /tools/get_usage:
+    post:
+      tags: [Account]
+      summary: get_usage
+      operationId: get_usage
+      description: |
+        Get current billing period usage and remaining quota for all metered dimensions:
+        `mcp_queries`, `api_requests`, `export_companies`, `ask_ai_credits`, `watchlist_companies`.
+        Includes plan limits and the UTC date when the period resets.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "How many MCP queries do I have left?" · "Show my current usage."
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": { "name": "get_usage", "arguments": {} }
+            }
+      responses:
+        '200':
+          description: Usage snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                plan: Pro
+                plan_id: pro
+                period: "2026-08"
+                resets_at: "2026-09-15T00:00:00.000Z"
+                usage:
+                  mcp_queries: 12
+                  api_requests: 340
+                  export_companies: 5
+                  ask_ai_credits: 2
+                  watchlist_companies: 8
+                limits:
+                  mcp_queries: 50
+                  api_requests: 5000
+                  export_companies: 1000
+                  ask_ai_credits: 20
+                  watchlist_companies: 50
+                remaining:
+                  mcp_queries: 38
+                  api_requests: 4660
+                  export_companies: 995
+                  ask_ai_credits: 18
+                  watchlist_companies: 42
+
+  /tools/get_plan:
+    post:
+      tags: [Account]
+      summary: get_plan
+      operationId: get_plan
+      description: |
+        Get the user's active billing plan: name, price, status, all limits, prepaid credit balance,
+        and billing period reset date.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "What plan am I on?" · "Show my plan limits."
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": { "name": "get_plan", "arguments": {} }
+            }
+      responses:
+        '200':
+          description: Plan details
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                plan_id: pro
+                plan_status: active
+                plan:
+                  id: pro
+                  display_name: Pro
+                  price_pln_monthly: 99
+                  allow_byok: true
+
+  /tools/list_watchlist:
+    post:
+      tags: [Account]
+      summary: list_watchlist
+      operationId: list_watchlist
+      description: |
+        List companies on the user's watchlist with company data (name, KRS, NIP, revenue, city).
+        Paginated; use `limit` and `offset`.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Show my watchlist." · "Which companies am I following?"
+
+        **Parameters:** `limit` (int, 1–100, default 20), `offset` (int, default 0).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "list_watchlist",
+                "arguments": { "limit": 20, "offset": 0 }
+              }
+            }
+      responses:
+        '200':
+          description: Watchlist with company data
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                data:
+                  - name: Example Sp. z o.o.
+                    krs: "0000012345"
+                    nip: "5250000000"
+                    city: WARSZAWA
+                    primary_pkd: 62.01.Z
+                    is_active: true
+                pagination:
+                  total: 8
+                  hasMore: false
+
+  /tools/add_to_watchlist:
+    post:
+      tags: [Account]
+      summary: add_to_watchlist
+      operationId: add_to_watchlist
+      description: |
+        Add a company to the watchlist. Identify by KRS (10-digit) or NIP (10-digit).
+        Supports both KRS companies and CEIDG sole proprietorships (via NIP).
+        Respects plan watchlist limit.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Add company with KRS 0000028860 to my watchlist."
+        · "Follow NIP 5250000000."
+
+        **Parameters:** `krs` (string, 10 digits) or `nip` (string, 10 digits); at least one required.
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "add_to_watchlist",
+                "arguments": { "krs": "0000028860" }
+              }
+            }
+      responses:
+        '200':
+          description: |
+            Watchlist add result. `already_following` indicates whether the company was
+            already on the watchlist before this request (`true` = no-op, `false` = newly added).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                entity_id: "abc-123"
+                already_following: false
+                created_at: "2026-08-24T20:00:00.000Z"
+                watchlist_key: "abc-123"
+
+  /tools/remove_from_watchlist:
+    post:
+      tags: [Account]
+      summary: remove_from_watchlist
+      operationId: remove_from_watchlist
+      description: |
+        Remove a company from the watchlist. Identify by KRS or NIP.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Remove KRS 0000028860 from my watchlist."
+        · "Unfollow NIP 5250000000."
+
+        **Parameters:** `krs` (string, 10 digits) or `nip` (string, 10 digits); at least one required.
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "remove_from_watchlist",
+                "arguments": { "krs": "0000028860" }
+              }
+            }
+      responses:
+        '200':
+          description: Removal result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                ok: true
+                removed: true
+
+  /tools/list_api_keys:
+    post:
+      tags: [Account]
+      summary: list_api_keys
+      operationId: list_api_keys
+      description: |
+        List all active REST API keys (`cb_…`) for the account.
+        Returns id, name, key_prefix, created_at, last_used_at.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Show my API keys." · "Which API keys do I have?"
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": { "name": "list_api_keys", "arguments": {} }
+            }
+      responses:
+        '200':
+          description: API keys list
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                keys:
+                  - id: "uuid-1"
+                    name: "Production key"
+                    key_prefix: "cb_a1b2"
+                    is_active: true
+                    created_at: "2026-06-01T10:00:00.000Z"
+                    last_used_at: "2026-08-24T18:00:00.000Z"
+
+  /tools/create_api_key:
+    post:
+      tags: [Account]
+      summary: create_api_key
+      operationId: create_api_key
+      description: |
+        Create a new REST API key (`cb_…`). The raw key is returned **once** and cannot be
+        retrieved later; store it securely.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Create a new API key called 'Analytics'."
+
+        **Parameters:** `name` (string, required, max 100 chars); human-readable label.
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "create_api_key",
+                "arguments": { "name": "Analytics" }
+              }
+            }
+      responses:
+        '200':
+          description: Created key (raw_key shown once)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                id: "uuid-new"
+                name: Analytics
+                key_prefix: "cb_f3e4"
+                raw_key: "cb_f3e4a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+                note: "Save this key now; it will never be shown again."
+
+  /tools/delete_api_key:
+    post:
+      tags: [Account]
+      summary: delete_api_key
+      operationId: delete_api_key
+      description: |
+        Revoke (deactivate) a REST API key by its ID. The key stops working immediately.
+        Use `list_api_keys` to get the ID.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Delete my API key with ID uuid-1."
+
+        **Parameters:** `key_id` (string, required); UUID of the key to revoke (from `list_api_keys`).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "delete_api_key",
+                "arguments": { "key_id": "uuid-1" }
+              }
+            }
+      responses:
+        '200':
+          description: Revocation result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                success: true
+                revoked_key_id: "uuid-1"
+
+  /tools/list_mcp_keys:
+    post:
+      tags: [Account]
+      summary: list_mcp_keys
+      operationId: list_mcp_keys
+      description: |
+        List all active MCP keys (`mcpk_…`) for the account.
+        Returns id, name, key_prefix, created_at, last_used_at.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Show my MCP keys." · "How many MCP keys do I have?"
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": { "name": "list_mcp_keys", "arguments": {} }
+            }
+      responses:
+        '200':
+          description: MCP keys list
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                keys:
+                  - id: "uuid-m1"
+                    name: "Cursor key"
+                    key_prefix: "mcpk_c1d2"
+                    is_active: true
+                    created_at: "2026-07-01T08:00:00.000Z"
+                    last_used_at: "2026-08-24T19:30:00.000Z"
+
+  /tools/create_mcp_key:
+    post:
+      tags: [Account]
+      summary: create_mcp_key
+      operationId: create_mcp_key
+      description: |
+        Create a new MCP key (`mcpk_…`). The raw key is returned **once**; store it securely.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Create a new MCP key called 'Claude Desktop'."
+
+        **Parameters:** `name` (string, required, max 100 chars); human-readable label.
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "create_mcp_key",
+                "arguments": { "name": "Claude Desktop" }
+              }
+            }
+      responses:
+        '200':
+          description: Created key (raw_key shown once)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                id: "uuid-m-new"
+                name: Claude Desktop
+                key_prefix: "mcpk_a1b2"
+                raw_key: "mcpk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+                note: "Save this key now; it will never be shown again."
+
+  /tools/delete_mcp_key:
+    post:
+      tags: [Account]
+      summary: delete_mcp_key
+      operationId: delete_mcp_key
+      description: |
+        Revoke (deactivate) an MCP key by its ID. Cannot revoke the key currently in use
+        (the one authenticating this request). Use `list_mcp_keys` to get IDs.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Revoke MCP key uuid-m1."
+
+        **Parameters:** `key_id` (string, required); UUID of the MCP key to revoke (from `list_mcp_keys`).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "delete_mcp_key",
+                "arguments": { "key_id": "uuid-m1" }
+              }
+            }
+      responses:
+        '200':
+          description: Revocation result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                success: true
+                revoked_key_id: "uuid-m1"
+
+  /tools/export_companies:
+    post:
+      tags: [Account]
+      summary: export_companies
+      operationId: export_companies
+      description: |
+        Bulk file export of companies matching filters (CSV / XLSX / JSON). Up to 500 rows per call.
+        Default `fields=contacts_only` is name, NIP, KRS, city, email, phone, website — small enough
+        for MCP clients. `fields=summary` adds location, PKD, latest revenue/profit.
+        `fields=full` is the complete dump (change history, rankings, people, enrichments) and often
+        exceeds client limits.
+
+        **Consumes `export_companies` quota only after the file is built.** A failed export does
+        not consume rows. The `mcp_queries` meter is left alone.
+
+        **Example prompts:** "Export contacts for IT companies in powiat wołomiński as JSON."
+        · "Bulk export active companies in PKD 62.01.Z for CRM import (contacts_only)."
+
+        **Parameters:** `name`, `krs`, `nip`, `city`, `county` (powiat, same as `search_companies`),
+        `region`, `pkd`, `revenue_min`, `revenue_max`,
+        `is_active`, `format` (`csv` default, or `xlsx` / `json`), `locale` (`en`/`pl`/`de`),
+        `limit` (default 50, max 500), `fields` (`contacts_only` default, or `summary` / `full`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportCompaniesArgs'
+            example:
+              pkd: "62.01.Z"
+              county: "wołomiński"
+              fields: contacts_only
+              format: json
+              limit: 100
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "export_companies",
+                "arguments": {
+                  "pkd": "62.01.Z",
+                  "county": "wołomiński",
+                  "fields": "contacts_only",
+                  "format": "json",
+                  "limit": 100
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Exported file payload (CSV text, JSON companies, or XLSX base64)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                filename: companies_2026-09-04.json
+                format: json
+                fields: contacts_only
+                row_count: 100
+                exported: 100
+                companies:
+                  - name: Example Sp. z o.o.
+                    nip: "5250000000"
+                    krs: "0000123456"
+                    city: Wołomin
+                    email: biuro@example.pl
+                    phone: "227600000"
+                    website: example.pl
+
+  /tools/upgrade_plan:
+    post:
+      tags: [Account]
+      summary: upgrade_plan
+      operationId: upgrade_plan
+      description: |
+        Create a Stripe Checkout session for a plan upgrade. Omit `plan_id` to list options.
+        With `plan_id` (`pro` or `scale`) returns `checkout_url` on `checkout.stripe.com`;
+        open it in the browser. Card payment happens there. Upgrade is instant after payment.
+
+        **Does not consume quota.** Requires an MCP key (after `request_signup` / `check_signup`).
+
+        **Example prompts:** "What plans can I upgrade to?" · "Give me a checkout link for Pro."
+
+        **Parameters:** `plan_id` (string, optional, `pro` or `scale`), `locale` (`en`/`pl`/`de`), `currency` (`PLN`/`USD`/`EUR`).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "upgrade_plan",
+                "arguments": { "plan_id": "pro" }
+              }
+            }
+      responses:
+        '200':
+          description: Upgrade options or checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                current_plan: free
+                target_plan: pro
+                currency: PLN
+                checkout_url: "https://checkout.stripe.com/c/pay/cs_test_..."
+                session_id: "cs_test_..."
+                message: "Open checkout_url in the browser to pay for pro. This is a Stripe Checkout page; card payment happens there. Upgrade is instant after payment."
+                upgrade_options:
+                  - id: pro
+                    display_name: Pro
+                    price_pln_monthly: 99
+                    mcp_queries_monthly: 50
+                    api_limit_monthly: 5000
+
+  /tools/set_webhook_url:
+    post:
+      tags: [Account]
+      summary: set_webhook_url
+      operationId: set_webhook_url
+      description: |
+        Configure, view, or remove a webhook endpoint for watchlist event notifications.
+        When configured, Compabase POSTs JSON to your URL when watched companies change.
+
+        **Does not consume quota.**
+
+        Available events:
+        - `watchlist.company_changed` – registry data or structure changed
+        - `watchlist.financials_updated` – new financial statement filed
+        - `watchlist.company_removed_from_registry` – company dissolved/removed
+
+        **Webhook signing:** Every delivery includes header `X-Compabase-Signature: t=<unix>,v1=<hex>`.
+        Verify by computing `HMAC-SHA256(raw_body, webhook_secret)` and comparing with `v1`.
+        The `webhook_secret` is returned on `get` and `set` actions.
+
+        **Example prompts:** "Set my webhook to https://my-app.com/hooks/compabase."
+        · "What webhook do I have configured?" · "Remove my webhook."
+
+        **Parameters:** `action` (required: `get`/`set`/`delete`), `url` (HTTPS, for set), `events` (array, optional).
+      x-codeSamples:
+        - lang: json
+          label: "JSON-RPC: set webhook"
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "set_webhook_url",
+                "arguments": {
+                  "action": "set",
+                  "url": "https://my-app.com/hooks/compabase",
+                  "events": ["watchlist.company_changed", "watchlist.financials_updated"]
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Webhook configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                configured: true
+                webhook_url: "https://my-app.com/hooks/compabase"
+                webhook_events:
+                  - watchlist.company_changed
+                  - watchlist.financials_updated
+                webhook_active: true
+                webhook_secret: "a1b2c3d4e5f6...64_hex_chars"
+                signature_header: X-Compabase-Signature
+                signature_format: "t=<unix_timestamp>,v1=<hmac_sha256_hex>"
+
+  /tools/get_byok_keys:
+    post:
+      tags: [Account]
+      summary: get_byok_keys
+      operationId: get_byok_keys
+      description: |
+        List status of Bring-Your-Own-Key (BYOK) provider keys: OpenAI, Claude, Gemini.
+        Shows whether each is configured, key prefix, and last used date.
+        The actual key value is omitted.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Which AI provider keys do I have configured?"
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": { "name": "get_byok_keys", "arguments": {} }
+            }
+      responses:
+        '200':
+          description: BYOK status per provider
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                openai:
+                  configured: true
+                  key_prefix: "sk-proj-abcdef…"
+                  updated_at: "2026-07-15T10:00:00.000Z"
+                  last_used_at: "2026-08-24T18:30:00.000Z"
+                claude:
+                  configured: false
+                  key_prefix: null
+                  updated_at: null
+                  last_used_at: null
+                gemini:
+                  configured: false
+                  key_prefix: null
+                  updated_at: null
+                  last_used_at: null
+
+  /tools/set_byok_key:
+    post:
+      tags: [Account]
+      summary: set_byok_key
+      operationId: set_byok_key
+      description: |
+        Add or update a BYOK provider API key. Encrypted at rest (AES-256-GCM).
+        Requires a paid plan (Pro or higher).
+
+        **Does not consume quota.**
+
+        Providers & key formats:
+        - `openai`: `sk-…` (OpenAI API key)
+        - `claude`: `sk-ant-…` (Anthropic Claude key)
+        - `gemini`: `AIza…` or `AQ.…` (Google AI Studio key)
+
+        **Example prompts:** "Set my OpenAI key to sk-proj-abc123..."
+
+        **Parameters:** `provider` (required), `api_key` (required).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "set_byok_key",
+                "arguments": {
+                  "provider": "openai",
+                  "api_key": "sk-proj-your-key-here"
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Key saved confirmation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                provider: openai
+                configured: true
+                key_prefix: "sk-proj-your-k…"
+                updated_at: "2026-08-25T10:00:00.000Z"
+
+  /tools/delete_byok_key:
+    post:
+      tags: [Account]
+      summary: delete_byok_key
+      operationId: delete_byok_key
+      description: |
+        Remove a BYOK provider key. After removal, the platform uses its own model access.
+
+        **Does not consume quota.**
+
+        **Example prompts:** "Remove my OpenAI key." · "Delete Gemini API key."
+
+        **Parameters:** `provider` (required: `openai`, `claude`, or `gemini`).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "delete_byok_key",
+                "arguments": { "provider": "openai" }
+              }
+            }
+      responses:
+        '200':
+          description: Key removed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                provider: openai
+                configured: false
+                message: "openai key removed."
+
+  /tools/batch_add_to_watchlist:
+    post:
+      tags: [Account]
+      summary: batch_add_to_watchlist
+      operationId: batch_add_to_watchlist
+      description: |
+        Add multiple companies to the watchlist in a single call. Provide an array of KRS/NIP
+        identifiers (max 500 per call). Resolves identifiers, skips already-followed, respects
+        plan watchlist limits.
+
+        **Does not consume `mcp_queries` quota.**
+
+        **Example prompts:** "Add these companies to my watchlist: 0000028860, 5213002255, 0000635012."
+        · "Bulk import KRS numbers to watchlist."
+
+        **Parameters:** `identifiers` (array of strings, required); KRS/NIP numbers.
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "batch_add_to_watchlist",
+                "arguments": {
+                  "identifiers": ["0000028860", "5213002255", "0000635012"]
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Batch import result
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                added: 2
+                already_following: 1
+                not_found: 0
+                total_resolved: 3
+
+  /tools/set_notification_preferences:
+    post:
+      tags: [Account]
+      summary: set_notification_preferences
+      operationId: set_notification_preferences
+      description: |
+        Get or update email notification preferences for watchlist changes.
+        When `email_notifications` is true, Compabase emails you when a watched
+        company's data changes (registry updates, new financials, deregistration).
+
+        **Does not consume `mcp_queries` quota.**
+
+        **Example prompts:** “Turn on watchlist email alerts.” · “What are my notification settings?”
+
+        **Parameters:** `action` (required: `get` / `set`), `email_notifications` (boolean, required for set),
+        `notification_email` (optional override; omit to use the account email).
+      x-codeSamples:
+        - lang: json
+          label: JSON-RPC tools/call
+          source: |
+            {
+              "jsonrpc": "2.0",
+              "id": 1,
+              "method": "tools/call",
+              "params": {
+                "name": "set_notification_preferences",
+                "arguments": {
+                  "action": "set",
+                  "email_notifications": true
+                }
+              }
+            }
+      responses:
+        '200':
+          description: Current or updated notification preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                email_notifications: true
+                notification_email: null
+                webhook_url: null
+                webhook_active: false
+                updated: true
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: mcpk
+      description: "MCP key from Integrations → MCP (`Authorization: Bearer mcpk_…`)."
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Alternative header with the raw `mcpk_…` key.
+  schemas:
+    McpClientConfig:
+      type: object
+      required: [mcpServers]
+      properties:
+        mcpServers:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              headers:
+                type: object
+                additionalProperties:
+                  type: string
+    CompanyIdentityArgs:
+      type: object
+      description: Identify a company with at least one of name, krs, or nip.
+      properties:
+        name:
+          type: string
+          description: Company name when KRS/NIP is unknown (legal-form suffix optional).
+        krs:
+          type: string
+          description: KRS registry number (10 digits, zero-padded).
+          example: "0000028860"
+        nip:
+          type: string
+          description: NIP tax number (10 digits, dashes optional).
+          example: "5250000000"
+    SearchCompaniesArgs:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Company name fragment (case-insensitive). Legal-form suffixes ignored.
+        krs:
+          type: string
+          description: KRS (10 digits, zero-padded).
+        nip:
+          type: string
+          description: NIP (10 digits, no dashes).
+        city:
+          type: string
+          description: City; KRS uses uppercase (e.g. WARSZAWA).
+        county:
+          type: string
+          description: County / powiat (lowercase).
+        region:
+          type: string
+          description: Voivodeship (lowercase), e.g. mazowieckie.
+        postal_code:
+          type: string
+          description: Postal code prefix, e.g. 00-9.
+        pkd:
+          type: string
+          description: Primary PKD prefix, e.g. 62 or 46.90.Z.
+        all_pkd:
+          type: string
+          description: Match any PKD in the activity list (not only primary).
+        legal_form:
+          type: string
+          description: Legal form fragment, e.g. spółka z o.o.
+        currency:
+          type: string
+          enum: [pln, usd, eur]
+          description: Currency for monetary filters. Default pln.
+        revenue_min:
+          type: number
+        revenue_max:
+          type: number
+        profit_min:
+          type: number
+        profit_max:
+          type: number
+        profit_operating_min:
+          type: number
+        profit_operating_max:
+          type: number
+        total_assets_min:
+          type: number
+        total_assets_max:
+          type: number
+        ebitda_min:
+          type: number
+        ebitda_max:
+          type: number
+        capital_min:
+          type: number
+        capital_max:
+          type: number
+        estimated_value_min:
+          type: number
+        estimated_value_max:
+          type: number
+        is_active:
+          type: boolean
+          description: true = active only, false = closed only. Omit for all.
+        has_email:
+          type: boolean
+          description: true = only companies with email on record. Matching rows include contacts.email.
+        has_website:
+          type: boolean
+          description: true = only companies with website on record. Matching rows include contacts.website.
+        sort_by:
+          type: string
+          enum: [revenue_total, profit_net, total_assets, profit_operating, ebitda, capital_total, estimated_value]
+          description: Sort field (default revenue_total).
+        sort_dir:
+          type: string
+          enum: [asc, desc]
+          description: Sort direction (default desc).
+        year:
+          type: integer
+          description: Latest financial period calendar year. For sector browse only; omit for identity lookup.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: Max results (default 10, max 50).
+        fields:
+          type: string
+          enum: [contacts_only, summary, full]
+          description: >
+            Response size. Default summary (name, NIP, KRS, location, PKD, latest financials,
+            email/phone/website). contacts_only is a CRM list. full returns every company_search
+            column and may exceed MCP client limits.
+    CountCompaniesArgs:
+      type: object
+      properties:
+        name:
+          type: string
+        krs:
+          type: string
+        nip:
+          type: string
+        city:
+          type: string
+        county:
+          type: string
+          description: County / powiat (lowercase).
+        region:
+          type: string
+        pkd:
+          type: string
+        all_pkd:
+          type: string
+        legal_form:
+          type: string
+        revenue_min:
+          type: number
+        revenue_max:
+          type: number
+        profit_min:
+          type: number
+        profit_max:
+          type: number
+        profit_operating_min:
+          type: number
+        profit_operating_max:
+          type: number
+        total_assets_min:
+          type: number
+        total_assets_max:
+          type: number
+        ebitda_min:
+          type: number
+        ebitda_max:
+          type: number
+        capital_min:
+          type: number
+        capital_max:
+          type: number
+        estimated_value_min:
+          type: number
+        estimated_value_max:
+          type: number
+        is_active:
+          type: boolean
+        has_email:
+          type: boolean
+        has_website:
+          type: boolean
+        year:
+          type: integer
+    ExportCompaniesArgs:
+      type: object
+      properties:
+        name:
+          type: string
+        krs:
+          type: string
+        nip:
+          type: string
+        city:
+          type: string
+        county:
+          type: string
+          description: County / powiat. Same filter as search_companies.
+        region:
+          type: string
+        pkd:
+          type: string
+        revenue_min:
+          type: number
+        revenue_max:
+          type: number
+        is_active:
+          type: boolean
+        format:
+          type: string
+          enum: [csv, xlsx, json]
+          description: Export format (default csv).
+        locale:
+          type: string
+          enum: [en, pl, de]
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 500
+          description: Max rows (default 50, max 500).
+        fields:
+          type: string
+          enum: [contacts_only, summary, full]
+          description: >
+            Payload size. Default contacts_only (name, NIP, KRS, city, email, phone, website).
+            summary adds location, PKD, latest revenue/profit. full is the complete dump and
+            often exceeds MCP client limits.

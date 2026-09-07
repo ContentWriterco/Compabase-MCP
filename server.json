@@ -2,11 +2,11 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.ContentWriterco/compabase",
   "title": "Compabase",
-  "description": "MCP server for 3M+ Polish companies — KRS & CEIDG financials, ownership, and industry search.",
-  "version": "1.0.0",
-  "websiteUrl": "https://compabase.com/mcp",
+  "description": "MCP server for 3M+ Polish companies — KRS & CEIDG financials, people, rankings, SUDOP/BZP/TED/URE/BDO/GPW/KRZ/CRBR, and account tools.",
+  "version": "1.6.2",
+  "websiteUrl": "https://compabase.com/docs/mcp/",
   "repository": {
-    "url": "https://github.com/ContentWriterco/Compabase-MCP",
+    "url": "https://github.com/ContentWriterco/compabase-mcp",
     "source": "github",
     "id": "1258422770"
   },
@@ -17,8 +17,8 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Compabase MCP key (mcpk_...) from https://compabase.com/mcp",
-          "isRequired": true,
+          "description": "Optional at first connect. After signup: Bearer mcpk_… from request_signup/check_signup or https://compabase.com/integrations?tab=mcp",
+          "isRequired": false,
           "isSecret": true,
           "format": "string",
           "placeholder": "Bearer mcpk_YOUR_KEY_HERE"
