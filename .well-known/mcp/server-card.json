@@ -1,4 +1,20 @@
 {
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "compabase",
+  "displayName": "Compabase — Polish Companies MCP Server",
+  "title": "Compabase — Polish Companies MCP Server",
+  "description": "Direct access to 3M+ Polish companies from KRS (National Court Register) and CEIDG registries. Query financials, ownership, management boards, rankings, and public aid.",
+  "homepage": "https://compabase.com",
+  "websiteUrl": "https://compabase.com",
+  "website": "https://compabase.com",
+  "icon": "https://compabase.com/logo.png",
+  "iconUrl": "https://compabase.com/logo.png",
+  "icons": [
+    {
+      "src": "https://compabase.com/logo.png",
+      "mimeType": "image/png"
+    }
+  ],
   "serverInfo": {
     "name": "compabase",
     "version": "1.6.2",
@@ -7,10 +23,21 @@
     "description": "Direct access to 3M+ Polish companies from KRS (National Court Register) and CEIDG registries. Query financials, ownership, management boards, rankings, and public aid.",
     "homepage": "https://compabase.com",
     "websiteUrl": "https://compabase.com",
+    "website": "https://compabase.com",
     "icon": "https://compabase.com/logo.png",
     "iconUrl": "https://compabase.com/logo.png"
   },
   "configSchema": {
+    "type": "object",
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "title": "Compabase MCP Key",
+        "description": "MCP API key (mcpk_...). Optional for initial signup and tier listing. Generate your key at https://compabase.com/mcp."
+      }
+    }
+  },
+  "config_schema": {
     "type": "object",
     "properties": {
       "apiKey": {
@@ -897,7 +924,7 @@
       }
     },
     {
-      "name": "get_company_sudop",
+      "name": "get_company_public_aid",
       "title": "Get Public Aid (SUDOP)",
       "description": "Get SUDOP public aid / grants for a company — full case list with amounts, grantor, measure, purpose. Keyed by NIP. Identify company by name, KRS, or NIP.",
       "inputSchema": {
@@ -935,7 +962,7 @@
       }
     },
     {
-      "name": "get_company_fe",
+      "name": "get_company_eu_funds",
       "title": "Get EU Funds Projects",
       "description": "Get European Funds (Fundusze Europejskie) projects for a company — official MFiPR lists, EU co-financing, programme and dates. Keyed by NIP. Identify company by name, KRS, or NIP. Cohesion/shared-management funds; not TED procurement, not FTS Commission grants, and not SUDOP state aid.",
       "inputSchema": {
@@ -973,7 +1000,7 @@
       }
     },
     {
-      "name": "get_company_fts",
+      "name": "get_company_procurement",
       "title": "Get Public Procurement Contracts (FTS)",
       "description": "Get European Commission FTS awards for a company — Horizon, LIFE, Erasmus and other direct/indirect-management grants. Keyed by NIP (VAT). Identify by name, KRS, or NIP. Not cohesion funds (get_company_fe) and not TED procurement.",
       "inputSchema": {
@@ -1011,7 +1038,7 @@
       }
     },
     {
-      "name": "get_company_bzp",
+      "name": "get_company_public_tenders",
       "title": "Get Public Procurement Bulletin (BZP)",
       "description": "Get BZP public procurement data — full awards as contractor and notices as buyer, with award values. Keyed by NIP. Identify company by name, KRS, or NIP.",
       "inputSchema": {
@@ -1049,7 +1076,7 @@
       }
     },
     {
-      "name": "get_company_ure",
+      "name": "get_company_energy_licenses",
       "title": "Get Energy Regulatory Office Licenses (URE)",
       "description": "Get URE energy concessions for a company — full list of electricity, gas, heat, and liquid fuels, with validity dates and pending applications. Keyed by NIP. Identify company by name, KRS, or NIP.",
       "inputSchema": {
@@ -1087,7 +1114,7 @@
       }
     },
     {
-      "name": "get_company_bdo",
+      "name": "get_company_waste_registry",
       "title": "Get Waste Management Registry (BDO)",
       "description": "Get BDO waste and packaging register data — registration number, EUP site count, activity flags, and headquarters decisions with issue and validity dates. Keyed by NIP. Identify company by name, KRS, or NIP.",
       "inputSchema": {
@@ -1125,7 +1152,7 @@
       }
     },
     {
-      "name": "get_company_gpw",
+      "name": "get_company_stock_market",
       "title": "Get Warsaw Stock Exchange Data (GPW)",
       "description": "Get Warsaw Stock Exchange listing for a company — ticker, ISIN, market (GPW main / NewConnect / GlobalConnect), last close and change, market cap, shares outstanding, EPS, P/E, dividend per share and yield. Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars — not full OHLCV history. Keyed by NIP. Identify company by name, KRS, or NIP.",
       "inputSchema": {
@@ -1171,7 +1198,7 @@
       }
     },
     {
-      "name": "get_company_ted",
+      "name": "get_company_eu_tenders",
       "title": "Get EU Tenders Daily (TED)",
       "description": "Get TED EU-threshold public procurement — full awards as contractor and notices as buyer. Keyed by NIP. Identify company by name, KRS, or NIP.",
       "inputSchema": {
@@ -1209,7 +1236,7 @@
       }
     },
     {
-      "name": "get_company_msig",
+      "name": "get_company_court_gazette",
       "title": "Get Court and Commercial Gazette (MSiG)",
       "description": "Get Court and Commercial Gazette (MSiG) notices for one company. Matched by KRS or NIP (creditor calls, dissolution, mergers, liquidation).",
       "inputSchema": {
@@ -1247,7 +1274,7 @@
       }
     },
     {
-      "name": "get_company_krz",
+      "name": "get_company_debt_registry",
       "title": "Get National Debt Register (KRZ)",
       "description": "Get KRZ insolvency / restructuring proceedings. KRS companies via company_krz; sole proprietors via CEIDG KRZ by NIP.",
       "inputSchema": {
@@ -2072,7 +2099,7 @@
       }
     },
     {
-      "name": "batch_add_to_watchlist",
+      "name": "add_watchlist_batch",
       "title": "Batch Add Companies to Watchlist",
       "description": "Add multiple companies to watchlist in one call. Provide an array of KRS/NIP identifiers (max 500). Resolves identifiers to companies, skips duplicates, respects plan limits.",
       "inputSchema": {
