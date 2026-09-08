@@ -1,0 +1,21 @@
+# Smithery MCP Server Configuration
+# https://smithery.ai/docs/config
+
+name: "compabase"
+displayName: "Compabase — Polish Companies MCP Server"
+description: "Direct access to 3M+ Polish companies from KRS (National Court Register) and CEIDG registries. Query financials, ownership, management boards, rankings, and public aid."
+homepage: "https://compabase.com"
+icon: "https://compabase.com/logo.png"
+repository: "https://github.com/ContentWriterco/Compabase-MCP"
+
+startCommand:
+  type: http
+  url: "https://compabase.com/api/mcp"
+
+configSchema:
+  type: object
+  properties:
+    apiKey:
+      type: string
+      title: "Compabase MCP Key"
+      description: "MCP API key (mcpk_...). Optional for initial signup and tier listing. Generate your key at https://compabase.com/mcp."
