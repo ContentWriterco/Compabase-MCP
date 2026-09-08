@@ -1,0 +1,2169 @@
+{
+  "serverInfo": {
+    "name": "compabase",
+    "version": "1.6.2",
+    "title": "Compabase — Polish Companies MCP Server",
+    "displayName": "Compabase — Polish Companies MCP Server",
+    "description": "Direct access to 3M+ Polish companies from KRS (National Court Register) and CEIDG registries. Query financials, ownership, management boards, rankings, and public aid.",
+    "homepage": "https://compabase.com",
+    "websiteUrl": "https://compabase.com",
+    "icon": "https://compabase.com/logo.png",
+    "iconUrl": "https://compabase.com/logo.png"
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "title": "Compabase MCP Key",
+        "description": "MCP API key (mcpk_...). Optional for initial signup and tier listing. Generate your key at https://compabase.com/mcp."
+      }
+    }
+  },
+  "authentication": {
+    "required": false
+  },
+  "tools": [
+    {
+      "name": "request_signup",
+      "title": "Request Compabase Signup",
+      "description": "Start Compabase account setup for an email. Sends a magic link. After the user clicks it, poll check_signup with the returned setup_id until status is ready — then you receive an MCP key automatically. Do not ask the user to generate a key in the portal. No auth required.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "User email to create or sign in to a Compabase account."
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pl",
+              "de"
+            ],
+            "description": "Email language (default en)."
+          },
+          "client": {
+            "type": "string",
+            "enum": [
+              "cursor",
+              "claude",
+              "vscode",
+              "other"
+            ],
+            "description": "AI client, used to label the generated MCP key."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "setup_id",
+          "status",
+          "email",
+          "message"
+        ],
+        "properties": {
+          "setup_id": {
+            "type": "string",
+            "description": "Unique session ID for polling signup completion."
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the setup session (e.g. pending)."
+          },
+          "email": {
+            "type": "string",
+            "description": "Email address being registered."
+          },
+          "expires_in_minutes": {
+            "type": "number",
+            "description": "Minutes until this setup request expires."
+          },
+          "poll_after_seconds": {
+            "type": "number",
+            "description": "Recommended polling interval in seconds."
+          },
+          "message": {
+            "type": "string",
+            "description": "Instructions for next steps."
+          },
+          "client": {
+            "type": "string",
+            "description": "Client identifier passed in request."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Request Compabase Signup",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "check_signup",
+      "title": "Check Compabase Signup Status",
+      "description": "Poll a request_signup session. When the user has confirmed email, returns mcp_key once and cursor_mcp_json to write to MCP config. Call every 3 seconds until status is ready, expired, or already_delivered. No auth required.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "setup_id"
+        ],
+        "properties": {
+          "setup_id": {
+            "type": "string",
+            "description": "setup_id from request_signup."
+          },
+          "client": {
+            "type": "string",
+            "enum": [
+              "cursor",
+              "claude",
+              "vscode",
+              "other"
+            ],
+            "description": "Optional client hint for the key name."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Setup session status: pending, ready, expired, already_delivered, or not_found."
+          },
+          "email": {
+            "type": "string",
+            "description": "User email address if confirmed."
+          },
+          "mcp_key": {
+            "type": "string",
+            "description": "Generated Compabase MCP key (mcpk_...)."
+          },
+          "key_name": {
+            "type": "string",
+            "description": "Display name of the generated key."
+          },
+          "key_prefix": {
+            "type": "string",
+            "description": "First 9 characters of the key."
+          },
+          "cursor_mcp_json": {
+            "type": "object",
+            "description": "Suggested MCP configuration snippet for Cursor / Claude Desktop."
+          },
+          "poll_after_seconds": {
+            "type": "number",
+            "description": "Seconds to wait before polling again if pending."
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message or next step guidance."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Check Compabase Signup Status",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "list_plans",
+      "title": "List Compabase Subscription Plans",
+      "description": "List Compabase billing plans and limits. No auth required. After sign-up, use upgrade_plan to get a Stripe Checkout URL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "plans",
+          "message"
+        ],
+        "properties": {
+          "plans": {
+            "type": "array",
+            "description": "List of available billing plans with pricing and quotas.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Plan identifier (free, pro, scale)."
+                },
+                "display_name": {
+                  "type": "string",
+                  "description": "Display name of the plan."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Plan description."
+                },
+                "price_pln_monthly": {
+                  "type": "number",
+                  "description": "Monthly price in PLN."
+                },
+                "export_limit_monthly": {
+                  "type": "number",
+                  "description": "Monthly export quota."
+                },
+                "api_limit_monthly": {
+                  "type": "number",
+                  "description": "Monthly REST API quota."
+                },
+                "ask_ai_credits_monthly": {
+                  "type": "number",
+                  "description": "Monthly Ask AI credits."
+                },
+                "watchlist_limit": {
+                  "type": "number",
+                  "description": "Maximum watchlist companies."
+                },
+                "mcp_queries_monthly": {
+                  "type": "number",
+                  "description": "Monthly MCP query quota."
+                },
+                "allow_byok": {
+                  "type": "boolean",
+                  "description": "Whether Bring-Your-Own-Key is enabled."
+                },
+                "is_contact_sales": {
+                  "type": "boolean",
+                  "description": "Whether contact sales is required."
+                }
+              }
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "Plan guidance."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List Compabase Subscription Plans",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_companies",
+      "title": "Search Polish Companies",
+      "description": "Search and filter Polish KRS companies (spółki). Compabase also holds the full CEIDG/JDG register; this tool does not browse JDG — those without a public contact email are hidden because of RODO. Default `fields=summary` returns a compact row (name, NIP, KRS, location, PKD, latest financials, email/phone/website) — small enough for MCP clients. `fields=contacts_only` is name/NIP/KRS/city/email/phone/website only. `fields=full` returns every company_search column plus contacts and may exceed client size limits. Use for rankings, sector filters, city/county/region browsing, name search, or NIP/KRS lookup. When a PKD is mostly JDG, a sparse result includes a `hint` (full CEIDG is in the database; listing is RODO-gated). Do not call export_companies just to get a handful of emails or phones.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name fragment (case-insensitive). Matches display name and full KRS name; legal-form suffixes like 'sp. z o.o.' are ignored."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (10 digits, zero-padded, e.g. '0000028860')."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (10 digits, no dashes)."
+          },
+          "city": {
+            "type": "string",
+            "description": "City name — KRS records use uppercase, e.g. 'WARSZAWA', 'POZNAŃ'."
+          },
+          "county": {
+            "type": "string",
+            "description": "County / powiat (lowercase)."
+          },
+          "region": {
+            "type": "string",
+            "description": "Voivodeship (lowercase), e.g. 'mazowieckie', 'wielkopolskie'."
+          },
+          "postal_code": {
+            "type": "string",
+            "description": "Postal code prefix, e.g. '00-9' or '61-'."
+          },
+          "pkd": {
+            "type": "string",
+            "description": "Primary PKD code prefix, e.g. '46.90.Z' or '46'."
+          },
+          "all_pkd": {
+            "type": "string",
+            "description": "Match any PKD code in the company's activity list (not just primary)."
+          },
+          "legal_form": {
+            "type": "string",
+            "description": "Legal form fragment, e.g. 'spółka z o.o.' or 'akcyjna'."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "pln",
+              "usd",
+              "eur"
+            ],
+            "description": "Currency for monetary filters. Default: pln."
+          },
+          "revenue_min": {
+            "type": "number",
+            "description": "Minimum total revenue."
+          },
+          "revenue_max": {
+            "type": "number",
+            "description": "Maximum total revenue."
+          },
+          "profit_min": {
+            "type": "number",
+            "description": "Minimum net profit."
+          },
+          "profit_max": {
+            "type": "number",
+            "description": "Maximum net profit."
+          },
+          "profit_operating_min": {
+            "type": "number",
+            "description": "Minimum operating profit (PLN). Negative allowed. Omit if unused."
+          },
+          "profit_operating_max": {
+            "type": "number",
+            "description": "Maximum operating profit (PLN). Omit if unused."
+          },
+          "total_assets_min": {
+            "type": "number",
+            "description": "Minimum total assets."
+          },
+          "total_assets_max": {
+            "type": "number",
+            "description": "Maximum total assets."
+          },
+          "ebitda_min": {
+            "type": "number",
+            "description": "Minimum EBITDA."
+          },
+          "ebitda_max": {
+            "type": "number",
+            "description": "Maximum EBITDA."
+          },
+          "capital_min": {
+            "type": "number",
+            "description": "Minimum share capital."
+          },
+          "capital_max": {
+            "type": "number",
+            "description": "Maximum share capital."
+          },
+          "estimated_value_min": {
+            "type": "number",
+            "description": "Minimum estimated company value."
+          },
+          "estimated_value_max": {
+            "type": "number",
+            "description": "Maximum estimated company value."
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "true = active only, false = closed only. Omit for all."
+          },
+          "has_email": {
+            "type": "boolean",
+            "description": "true = only companies with email on record. Matching rows include contacts.email. Omit otherwise."
+          },
+          "has_website": {
+            "type": "boolean",
+            "description": "true = only companies with website on record. Matching rows include contacts.website. Omit otherwise."
+          },
+          "sort_by": {
+            "type": "string",
+            "enum": [
+              "revenue_total",
+              "profit_net",
+              "total_assets",
+              "profit_operating",
+              "ebitda",
+              "capital_total",
+              "estimated_value"
+            ],
+            "description": "Sort field (default: revenue_total)."
+          },
+          "sort_dir": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "description": "Sort direction (default: desc)."
+          },
+          "year": {
+            "type": "integer",
+            "description": "Filter to companies whose latest financial_period_to falls within this calendar year (e.g. 2024). Use only for sector/ranking browse — omit when looking up a company by name, KRS, or NIP."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Max results (default: 10, max: 50)."
+          },
+          "fields": {
+            "type": "string",
+            "enum": [
+              "contacts_only",
+              "summary",
+              "full"
+            ],
+            "description": "Response size. Default summary (name, NIP, KRS, location, PKD, latest financials, email/phone/website). contacts_only: name, NIP, KRS, city, email, phone, website. full: every company_search column plus contacts — often too large for MCP clients."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "description": "List of matching company records."
+          },
+          "total": {
+            "type": "number",
+            "description": "Estimated or exact total count of matches."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Optional guidance regarding filters or CEIDG coverage."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Search Polish Companies",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company",
+      "title": "Get Company Profile",
+      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, PKD, address, plus contacts when on record. All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown (legal-form suffix optional)."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (10 digits, zero-padded)."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (10 digits, dashes optional)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "object",
+            "description": "Detailed company profile."
+          },
+          "contacts": {
+            "type": "object",
+            "description": "Public contact details (email, phone, website) if available."
+          },
+          "financials": {
+            "type": "object",
+            "description": "Headline financials for latest filed period."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Company Profile",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_financials",
+      "title": "Get Full Financial Statements",
+      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown (legal-form suffix optional)."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          },
+          "year_from": {
+            "type": "integer",
+            "description": "Earliest fiscal year to include (e.g. 2019)."
+          },
+          "year_to": {
+            "type": "integer",
+            "description": "Latest fiscal year to include (e.g. 2023)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "financials": {
+            "type": "array",
+            "description": "Historical financial statements with full balance sheet and P&L line items."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS number of the company."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP number of the company."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Full Financial Statements",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_people",
+      "title": "Get Company People & Management",
+      "description": "Get people associated with a company — management board, supervisory board, shareholders, proxies. Returns display names, role labels, and relationship types (management, supervisory, ownership, procuration). Identify by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown (legal-form suffix optional)."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          },
+          "relationship_type": {
+            "type": "string",
+            "description": "Filter: management, supervisory (rada nadzorcza), ownership, procuration. Omit for all."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "people": {
+            "type": "array",
+            "description": "List of associated persons (board, supervisory, shareholders, proxies)."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS number of the company."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Company People & Management",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "count_companies",
+      "title": "Count Polish Companies",
+      "description": "Count KRS companies matching given filters. Returns a single number — no company list. Does not count JDG in this tool (full CEIDG is in Compabase; listing is RODO-gated). Sparse or zero counts in JDG-dominated PKDs include a `hint`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name fragment (case-insensitive). Matches display name and full KRS name; legal-form suffixes like 'sp. z o.o.' are ignored."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          },
+          "city": {
+            "type": "string",
+            "description": "City name — KRS uses uppercase."
+          },
+          "county": {
+            "type": "string",
+            "description": "County / powiat (lowercase)."
+          },
+          "region": {
+            "type": "string",
+            "description": "Voivodeship (lowercase)."
+          },
+          "pkd": {
+            "type": "string",
+            "description": "Primary PKD code prefix, e.g. '46.90.Z' or '46'."
+          },
+          "all_pkd": {
+            "type": "string",
+            "description": "Match any PKD code in the company's activity list (not just primary)."
+          },
+          "legal_form": {
+            "type": "string",
+            "description": "Legal form fragment."
+          },
+          "revenue_min": {
+            "type": "number",
+            "description": "Minimum total revenue in PLN."
+          },
+          "revenue_max": {
+            "type": "number",
+            "description": "Maximum total revenue in PLN."
+          },
+          "profit_min": {
+            "type": "number",
+            "description": "Minimum net profit in PLN."
+          },
+          "profit_max": {
+            "type": "number",
+            "description": "Maximum net profit in PLN."
+          },
+          "profit_operating_min": {
+            "type": "number",
+            "description": "Minimum operating profit in PLN."
+          },
+          "profit_operating_max": {
+            "type": "number",
+            "description": "Maximum operating profit in PLN."
+          },
+          "total_assets_min": {
+            "type": "number",
+            "description": "Minimum total assets in PLN."
+          },
+          "total_assets_max": {
+            "type": "number",
+            "description": "Maximum total assets in PLN."
+          },
+          "ebitda_min": {
+            "type": "number",
+            "description": "Minimum EBITDA in PLN."
+          },
+          "ebitda_max": {
+            "type": "number",
+            "description": "Maximum EBITDA in PLN."
+          },
+          "capital_min": {
+            "type": "number",
+            "description": "Minimum share capital in PLN."
+          },
+          "capital_max": {
+            "type": "number",
+            "description": "Maximum share capital in PLN."
+          },
+          "estimated_value_min": {
+            "type": "number",
+            "description": "Minimum estimated value in PLN."
+          },
+          "estimated_value_max": {
+            "type": "number",
+            "description": "Maximum estimated value in PLN."
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "true = active only, false = closed only. Omit for all."
+          },
+          "has_email": {
+            "type": "boolean",
+            "description": "true = only companies with email on record. Omit otherwise."
+          },
+          "has_website": {
+            "type": "boolean",
+            "description": "true = only companies with website on record. Omit otherwise."
+          },
+          "year": {
+            "type": "integer",
+            "description": "Filter to companies whose latest financial_period_to falls within this calendar year. Use only for sector/ranking browse — omit when looking up a company by name, KRS, or NIP."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "Total count of KRS companies matching filters."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Optional guidance regarding filters or CEIDG."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Count Polish Companies",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "execute_sql",
+      "title": "Execute Read-Only SQL",
+      "description": "Execute a read-only SQL SELECT query against the Compabase database. Use when dedicated tools are not enough (aggregations, joins, custom analysis).",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A read-only SQL SELECT or WITH…SELECT statement."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "rows": {
+            "type": "array",
+            "description": "Result rows from the read-only query."
+          },
+          "rowCount": {
+            "type": "number",
+            "description": "Number of rows returned."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Execute Read-Only SQL",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_rankings",
+      "title": "Get Company Sector Rankings",
+      "description": "Get a company's revenue rank positions within its industry (PKD), region (voivodeship), and all of Poland. Returns rows from company_financial_rankings — one row per scope (pkd_full, pkd_division, pkd_section, region, country). Use for questions like: where does company X rank in Poland / its industry / its region?",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (10 digits, zero-padded)."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (10 digits, dashes optional)."
+          },
+          "scope_type": {
+            "type": "string",
+            "enum": [
+              "pkd_full",
+              "pkd_division",
+              "pkd_section",
+              "region",
+              "country"
+            ],
+            "description": "Optional. Filter to a single scope. Omit to get all scopes."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "rankings": {
+            "type": "array",
+            "description": "Rankings by revenue, profit, and growth within sector and region."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Company Sector Rankings",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_financial_stats",
+      "title": "Get Sector Financial Statistics",
+      "description": "Get precomputed aggregate financial statistics for a sector, region, PKD branch, or country. Returns median, p25/p75/p90, winsorized mean, mean, total, n_companies, min/max. Use for questions like: what is the median revenue / average profit / assets in industry X or region Y? Prefer median or winsor_mean over mean. cost_wages is PLN-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dimension_type": {
+            "type": "string",
+            "enum": [
+              "country",
+              "pkd_section",
+              "pkd_division",
+              "pkd_class",
+              "pkd_full",
+              "region",
+              "county",
+              "city"
+            ],
+            "description": "Granularity: 'country'=Poland; 'pkd_section'=A–U; 'pkd_division'=2-digit; 'pkd_full'=full code; 'region'=voivodeship; etc."
+          },
+          "dimension_key": {
+            "type": "string",
+            "description": "Key for the dimension, e.g. 'PL', 'G', '46', '46.90.Z', 'mazowieckie'. Prefix match applied."
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "revenue_total",
+              "profit_net",
+              "total_assets",
+              "cost_wages"
+            ],
+            "description": "Financial metric. Omit to return all metrics."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "PLN",
+              "EUR",
+              "USD"
+            ],
+            "description": "Currency (default: PLN). cost_wages is PLN-only."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "description": "Aggregated sector benchmark statistics (averages, medians, percentiles)."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Sector Financial Statistics",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_sudop",
+      "title": "Get Public Aid (SUDOP)",
+      "description": "Get SUDOP public aid / grants for a company — full case list with amounts, grantor, measure, purpose. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for SUDOP)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "aid_records": {
+            "type": "array",
+            "description": "Records of de minimis and state public aid granted to company."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Public Aid (SUDOP)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_fe",
+      "title": "Get EU Funds Projects",
+      "description": "Get European Funds (Fundusze Europejskie) projects for a company — official MFiPR lists, EU co-financing, programme and dates. Keyed by NIP. Identify company by name, KRS, or NIP. Cohesion/shared-management funds; not TED procurement, not FTS Commission grants, and not SUDOP state aid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for FE)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "projects": {
+            "type": "array",
+            "description": "EU-funded projects and subsidies co-financed by European funds."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get EU Funds Projects",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_fts",
+      "title": "Get Public Procurement Contracts (FTS)",
+      "description": "Get European Commission FTS awards for a company — Horizon, LIFE, Erasmus and other direct/indirect-management grants. Keyed by NIP (VAT). Identify by name, KRS, or NIP. Not cohesion funds (get_company_fe) and not TED procurement.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for FTS)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "contracts": {
+            "type": "array",
+            "description": "Public procurement tenders won by the company."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Public Procurement Contracts (FTS)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_bzp",
+      "title": "Get Public Procurement Bulletin (BZP)",
+      "description": "Get BZP public procurement data — full awards as contractor and notices as buyer, with award values. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for BZP)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "notices": {
+            "type": "array",
+            "description": "Public procurement bulletin tender announcements and contract awards."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Public Procurement Bulletin (BZP)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_ure",
+      "title": "Get Energy Regulatory Office Licenses (URE)",
+      "description": "Get URE energy concessions for a company — full list of electricity, gas, heat, and liquid fuels, with validity dates and pending applications. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for URE)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "concessions": {
+            "type": "array",
+            "description": "Energy regulator concessions and electricity/gas trade licenses."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Energy Regulatory Office Licenses (URE)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_bdo",
+      "title": "Get Waste Management Registry (BDO)",
+      "description": "Get BDO waste and packaging register data — registration number, EUP site count, activity flags, and headquarters decisions with issue and validity dates. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for BDO)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "description": "BDO waste management registry registration and activity scopes."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Waste Management Registry (BDO)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_gpw",
+      "title": "Get Warsaw Stock Exchange Data (GPW)",
+      "description": "Get Warsaw Stock Exchange listing for a company — ticker, ISIN, market (GPW main / NewConnect / GlobalConnect), last close and change, market cap, shares outstanding, EPS, P/E, dividend per share and yield. Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars — not full OHLCV history. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for GPW)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "description": "Stock ticker symbol."
+          },
+          "market": {
+            "type": "string",
+            "description": "GPW Main Market or NewConnect."
+          },
+          "profile": {
+            "type": "object",
+            "description": "Listed company stock and market data."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Warsaw Stock Exchange Data (GPW)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_ted",
+      "title": "Get EU Tenders Daily (TED)",
+      "description": "Get TED EU-threshold public procurement — full awards as contractor and notices as buyer. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for TED)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tenders": {
+            "type": "array",
+            "description": "High-value public procurement notices published on Tenders Electronic Daily."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get EU Tenders Daily (TED)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_msig",
+      "title": "Get Court and Commercial Gazette (MSiG)",
+      "description": "Get Court and Commercial Gazette (MSiG) notices for one company. Matched by KRS or NIP (creditor calls, dissolution, mergers, liquidation).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP (CEIDG / when KRS unknown)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "description": "Official announcements published in Monitor Sądowy i Gospodarczy."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Court and Commercial Gazette (MSiG)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_krz",
+      "title": "Get National Debt Register (KRZ)",
+      "description": "Get KRZ insolvency / restructuring proceedings. KRS companies via company_krz; sole proprietors via CEIDG KRZ by NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP (CEIDG / when KRS unknown)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "proceedings": {
+            "type": "array",
+            "description": "Insolvency, restructuring, and bankruptcy proceedings on record in KRZ."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get National Debt Register (KRZ)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_beneficiaries",
+      "title": "Get Ultimate Beneficial Owners (CRBR)",
+      "description": "Get CRBR beneficial owners for a KRS company. All names are returned (same as zarząd / wspólnicy). PESEL is never included (birth_year only). JDG are not in CRBR.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (required path for CRBR)."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP — used to resolve KRS when needed."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "beneficiaries": {
+            "type": "array",
+            "description": "Registered Ultimate Beneficial Owners (UBO) from CRBR."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Ultimate Beneficial Owners (CRBR)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_articles",
+      "title": "Get News Mentions",
+      "description": "Get full text of the company's articles of association or statute (umowa spółki / statut) from RAR (Repozytorium Akt Rejestrowych). Use when the user asks about: share transfer consent, preemption rights, non-compete clauses, company duration, voting rights, special share classes, representation rules from the deed, or any clause in the founding document. Returns doc metadata + full extracted text. KRS companies only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP — used to resolve KRS when needed."
+          },
+          "doc_id": {
+            "type": "string",
+            "description": "Optional: specific rar_doc_id. Omit for the latest articles / statute."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "articles": {
+            "type": "array",
+            "description": "Media mentions, press articles, and business news mentioning company."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get News Mentions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_usage",
+      "title": "Get Account Usage & Quota",
+      "description": "Get current billing period usage and remaining quota — mcp_queries, api_requests, export_companies, ask_ai_credits, watchlist_companies. Includes limits and reset date.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "usage"
+        ],
+        "properties": {
+          "usage": {
+            "type": "object",
+            "description": "Monthly queries used, limit, and remaining quota."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Account Usage & Quota",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_plan",
+      "title": "Get Current Subscription Plan",
+      "description": "Get the user's active billing plan details — plan name, price, status, limits, prepaid credit balance, and billing period reset date.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "properties": {
+          "plan": {
+            "type": "object",
+            "description": "Current plan details and features."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Current Subscription Plan",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_watchlist",
+      "title": "List Watchlist Companies",
+      "description": "List companies on the user's watchlist with company data (name, KRS, NIP, revenue, city). Supports pagination via limit/offset.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Max results (default: 20, max: 100)."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pagination offset (default: 0)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "watchlist"
+        ],
+        "properties": {
+          "watchlist": {
+            "type": "array",
+            "description": "List of tracked companies with monitored change status."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List Watchlist Companies",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "add_to_watchlist",
+      "title": "Add Company to Watchlist",
+      "description": "Add a company to the user's watchlist. Identify by KRS (10-digit) or NIP (10-digit). Supports both KRS companies and CEIDG sole proprietorships (via NIP).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (10 digits, zero-padded)."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (10 digits). Used for CEIDG if no KRS match."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Operation status (added or already_watched)."
+          },
+          "company": {
+            "type": "object",
+            "description": "Watchlist entry created."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Add Company to Watchlist",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "remove_from_watchlist",
+      "title": "Remove Company from Watchlist",
+      "description": "Remove a company from the user's watchlist. Identify by KRS or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (10 digits, zero-padded)."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (10 digits)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Operation status (removed or not_found)."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Remove Company from Watchlist",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_api_keys",
+      "title": "List REST API Keys",
+      "description": "List all active REST API keys (cb_…) for the user's account. Returns id, name, key_prefix, created_at, last_used_at.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "api_keys"
+        ],
+        "properties": {
+          "api_keys": {
+            "type": "array",
+            "description": "List of active REST API keys."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List REST API Keys",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_api_key",
+      "title": "Create REST API Key",
+      "description": "Create a new REST API key (cb_…). The raw key is returned once and cannot be retrieved later.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable label for the key (max 100 chars)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "api_key"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string",
+            "description": "Newly generated REST API key."
+          },
+          "name": {
+            "type": "string",
+            "description": "Label assigned to key."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Create REST API Key",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "delete_api_key",
+      "title": "Revoke REST API Key",
+      "description": "Revoke (deactivate) a REST API key by its ID. The key stops working immediately.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "key_id"
+        ],
+        "properties": {
+          "key_id": {
+            "type": "string",
+            "description": "UUID of the API key to revoke (from list_api_keys)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Result status of revocation."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Revoke REST API Key",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_mcp_keys",
+      "title": "List MCP Keys",
+      "description": "List all active MCP keys (mcpk_…) for the user's account. Returns id, name, key_prefix, created_at, last_used_at.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "mcp_keys"
+        ],
+        "properties": {
+          "mcp_keys": {
+            "type": "array",
+            "description": "List of active MCP keys."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List MCP Keys",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_mcp_key",
+      "title": "Create MCP Key",
+      "description": "Create a new MCP key (mcpk_…). The raw key is returned once and cannot be retrieved later.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable label for the key (max 100 chars)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "mcp_key"
+        ],
+        "properties": {
+          "mcp_key": {
+            "type": "string",
+            "description": "Newly generated MCP key (mcpk_...)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Key name."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Create MCP Key",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "delete_mcp_key",
+      "title": "Revoke MCP Key",
+      "description": "Revoke (deactivate) an MCP key by its ID. Cannot revoke the key currently in use. The key stops working immediately.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "key_id"
+        ],
+        "properties": {
+          "key_id": {
+            "type": "string",
+            "description": "UUID of the MCP key to revoke (from list_mcp_keys)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Result status of revocation."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Revoke MCP Key",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "export_companies",
+      "title": "Export Companies to CSV",
+      "description": "Bulk file export of companies matching filters (CSV / XLSX / JSON). Up to 500 rows per call. Default `fields=contacts_only`: name, NIP, KRS, city, email, phone, website — small enough to use in-chat. `fields=summary` adds location, PKD, latest revenue/profit. `fields=full` is the complete dump (change history, rankings, people, enrichments, CSV twins) and often exceeds MCP client limits. Consumes export quota only after the file is built successfully. For a short list of emails after search_companies, use search with fields=contacts_only instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name fragment (case-insensitive)."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number (exports that one company)."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (exports matching companies)."
+          },
+          "city": {
+            "type": "string",
+            "description": "City name."
+          },
+          "county": {
+            "type": "string",
+            "description": "County / powiat (lowercase). Same filter as search_companies / count_companies."
+          },
+          "region": {
+            "type": "string",
+            "description": "Voivodeship (e.g. mazowieckie)."
+          },
+          "pkd": {
+            "type": "string",
+            "description": "Primary PKD code (same as the browse PKD filter)."
+          },
+          "revenue_min": {
+            "type": "number",
+            "description": "Minimum total revenue."
+          },
+          "revenue_max": {
+            "type": "number",
+            "description": "Maximum total revenue."
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "true = active companies only."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "xlsx",
+              "json"
+            ],
+            "description": "Export format (default: csv). Column set follows `fields` (contacts_only by default)."
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pl",
+              "de"
+            ],
+            "description": "Column/label language (default: en)."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Max rows to export (default: 50, max: 500)."
+          },
+          "fields": {
+            "type": "string",
+            "enum": [
+              "contacts_only",
+              "summary",
+              "full"
+            ],
+            "description": "Payload size. Default contacts_only (name, NIP, KRS, city, email, phone, website). summary adds county/region, PKD, latest revenue/profit. full is the complete profile dump — often too large for MCP clients; use only when asked for the full file."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "download_url"
+        ],
+        "properties": {
+          "download_url": {
+            "type": "string",
+            "description": "Direct download URL for generated CSV file."
+          },
+          "count": {
+            "type": "number",
+            "description": "Number of records exported."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Export Companies to CSV",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "upgrade_plan",
+      "title": "Upgrade Subscription Plan",
+      "description": "Create a Stripe Checkout session for a plan upgrade. Shows current plan and available upgrades. Pass plan_id ('pro' or 'scale') to get a checkout_url on checkout.stripe.com — open it in the browser for the user to pay. Do not send the user to the marketing pricing page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "plan_id": {
+            "type": "string",
+            "enum": [
+              "pro",
+              "scale"
+            ],
+            "description": "Target plan ID. Required to create a Stripe Checkout URL."
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "pl",
+              "de"
+            ],
+            "description": "UI locale for the success/cancel return URLs (default en)."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "PLN",
+              "USD",
+              "EUR"
+            ],
+            "description": "Checkout currency. Defaults from locale (pl → PLN, otherwise USD)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "checkout_url"
+        ],
+        "properties": {
+          "checkout_url": {
+            "type": "string",
+            "description": "Stripe Checkout URL to complete subscription purchase."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Upgrade Subscription Plan",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "set_webhook_url",
+      "title": "Configure Webhook URL",
+      "description": "Configure, view, or remove webhook for watchlist event notifications. Events: watchlist.company_changed, watchlist.financials_updated, watchlist.company_removed_from_registry.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get",
+              "set",
+              "delete"
+            ],
+            "description": "Action: 'get' to view config, 'set' to configure, 'delete' to remove."
+          },
+          "url": {
+            "type": "string",
+            "description": "HTTPS webhook endpoint URL (required for action=set)."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Event types to subscribe to. Defaults to all available events."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Webhook configuration status."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Configure Webhook URL",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_byok_keys",
+      "title": "Get Bring-Your-Own-Key Providers",
+      "description": "List configured Bring-Your-Own-Key (BYOK) provider keys status. Shows which providers (openai, claude, gemini) have keys configured, with prefix and last-used date. Never returns the actual key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "description": "Configured AI provider keys."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Bring-Your-Own-Key Providers",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "set_byok_key",
+      "title": "Set Bring-Your-Own-Key Provider",
+      "description": "Add or update a BYOK provider API key. Key is encrypted at rest (AES-256-GCM). Requires paid plan (Pro+). Providers: openai (sk-…), claude (sk-ant-…), gemini (AIza… or AQ.…).",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "provider",
+          "api_key"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "claude",
+              "gemini"
+            ],
+            "description": "AI provider name."
+          },
+          "api_key": {
+            "type": "string",
+            "description": "Raw API key for the provider."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Provider key setup status."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Set Bring-Your-Own-Key Provider",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "delete_byok_key",
+      "title": "Remove Bring-Your-Own-Key Provider",
+      "description": "Remove a configured BYOK provider key. After removal, the platform falls back to its own model access.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "claude",
+              "gemini"
+            ],
+            "description": "Provider to remove key for."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Removal status."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Remove Bring-Your-Own-Key Provider",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "batch_add_to_watchlist",
+      "title": "Batch Add Companies to Watchlist",
+      "description": "Add multiple companies to watchlist in one call. Provide an array of KRS/NIP identifiers (max 500). Resolves identifiers to companies, skips duplicates, respects plan limits.",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "identifiers"
+        ],
+        "properties": {
+          "identifiers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of KRS numbers (10 digits) or NIP numbers (10 digits)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "added",
+          "total"
+        ],
+        "properties": {
+          "added": {
+            "type": "number",
+            "description": "Number of companies successfully added."
+          },
+          "total": {
+            "type": "number",
+            "description": "Total requested companies."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Batch Add Companies to Watchlist",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "set_notification_preferences",
+      "title": "Set Notification Preferences",
+      "description": "Get or update email notification preferences for watchlist changes. When email_notifications=true, you will receive an email whenever a watched company's data changes (registry updates, new financial statements, deregistration, etc.).",
+      "inputSchema": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get",
+              "set"
+            ],
+            "description": "'get' returns current preferences, 'set' updates them."
+          },
+          "email_notifications": {
+            "type": "boolean",
+            "description": "Enable/disable email notifications for watchlist changes (required for 'set')."
+          },
+          "notification_email": {
+            "type": "string",
+            "description": "Override email address for notifications. Omit to use account email."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Preference update status."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Set Notification Preferences",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "resources": [],
+  "prompts": []
+}
