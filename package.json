@@ -1,0 +1,22 @@
+{
+  "name": "compabase-mcp",
+  "version": "1.6.2",
+  "displayName": "Compabase — Polish Companies MCP Server",
+  "description": "Direct access to 3M+ Polish companies from KRS and CEIDG registries for Claude, Cursor, and AI agents.",
+  "homepage": "https://compabase.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ContentWriterco/Compabase-MCP.git"
+  },
+  "keywords": [
+    "mcp",
+    "krs",
+    "ceidg",
+    "polish-companies",
+    "modelcontextprotocol",
+    "claude",
+    "cursor"
+  ],
+  "author": "Compabase",
+  "license": "MIT"
+}

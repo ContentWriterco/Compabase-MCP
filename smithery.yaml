@@ -6,6 +6,7 @@ displayName: "Compabase — Polish Companies MCP Server"
 description: "Direct access to 3M+ Polish companies from KRS (National Court Register) and CEIDG registries. Query financials, ownership, management boards, rankings, and public aid."
 homepage: "https://compabase.com"
 icon: "https://compabase.com/logo.png"
+iconUrl: "https://compabase.com/logo.png"
 repository: "https://github.com/ContentWriterco/Compabase-MCP"
 
 startCommand:

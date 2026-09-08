@@ -4,7 +4,14 @@
   "title": "Compabase",
   "description": "MCP server for 3M+ Polish companies – KRS & CEIDG financials, people, rankings, SUDOP/BZP/TED/URE/BDO/GPW/KRZ/CRBR, and account tools.",
   "version": "1.6.2",
-  "websiteUrl": "https://compabase.com/docs/mcp/",
+  "websiteUrl": "https://compabase.com",
+  "homepage": "https://compabase.com",
+  "icons": [
+    {
+      "src": "https://compabase.com/logo.png",
+      "mimeType": "image/png"
+    }
+  ],
   "repository": {
     "url": "https://github.com/ContentWriterco/compabase-mcp",
     "source": "github",
