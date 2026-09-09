@@ -45,12 +45,17 @@ Then ask the agent to sign you up (`request_signup` with your email). After you 
 }
 ```
 
+**Claude.ai (Web / Mobile Connectors)**:
+- Go to **Settings → Connectors → Add Custom Connector**
+- **URL**: `https://compabase.com/mcp?apiKey=mcpk_YOUR_KEY_HERE`
+- **Authentication**: `None (Detected)` (key is passed in URL)
+
 Keys can also be created in [Integrations → MCP](https://compabase.com/integrations?tab=mcp). MCP keys (`mcpk_…`) are separate from REST API keys (`cb_…`).
 
 | Field | Value |
 |-------|-------|
-| Endpoint | `POST https://compabase.com/api/mcp` |
-| Authentication | `Authorization: Bearer mcpk_…` or `X-API-Key: mcpk_…` (optional until after signup) |
+| Endpoint | `POST https://compabase.com/api/mcp` or `https://compabase.com/mcp` |
+| Authentication | `Authorization: Bearer mcpk_…`, `X-API-Key: mcpk_…`, or `?apiKey=mcpk_…` |
 | Protocol | MCP Streamable HTTP (JSON-RPC 2.0) |
 | MCP version | `2024-11-05` |
 | Server | `compabase` **1.6.2** |
