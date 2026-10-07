@@ -2,10 +2,9 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.ContentWriterco/compabase",
   "title": "Compabase",
-  "description": "MCP server for 3M+ Polish companies – KRS & CEIDG financials, people, rankings, SUDOP/BZP/TED/URE/BDO/GPW/KRZ/CRBR, and account tools.",
+  "description": "3M+ Polish companies (KRS, CEIDG): financials, people, rankings and public registries.",
   "version": "1.6.2",
   "websiteUrl": "https://compabase.com",
-  "homepage": "https://compabase.com",
   "icons": [
     {
       "src": "https://compabase.com/logo.png",
