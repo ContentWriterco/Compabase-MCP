@@ -1,0 +1,103 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "compabase",
+  "version": "1.0.0",
+  "description": "Polish company data for 3M+ companies from the KRS and CEIDG registers: financial statements, management, beneficial owners, public tenders, EU funds, insolvency and sanctions records.",
+  "author": {
+    "name": "Content Writer LLC",
+    "email": "contact@compabase.com",
+    "url": "https://compabase.com"
+  },
+  "homepage": "https://compabase.com",
+  "repository": "https://github.com/ContentWriterco/Compabase-MCP",
+  "license": "MIT",
+  "keywords": ["Poland", "company data", "KRS", "CEIDG", "KYB", "due diligence", "financial statements", "public tenders"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Compabase",
+        "shortDescription": "Polish company data and KYB",
+        "longDescription": "Compabase connects ChatGPT to data on more than 3 million Polish companies from the KRS and CEIDG registers.\n\nFind companies by name, tax ID (NIP), KRS number, industry (PKD), location or revenue. Read registry profiles, multi-year financial statements, management and supervisory boards, shareholders and beneficial owners. Check public tenders, EU funds and public aid, insolvency and restructuring proceedings, court gazette notices, sanctions lists, financial supervision licences and stock market listings.\n\nUseful for due diligence, KYB checks, sales research and market analysis. Sign in with your Compabase account; queries count toward your plan's MCP limit. The plugin is read-only.",
+        "developerName": "Content Writer LLC",
+        "category": "Business",
+        "capabilities": [
+          "Search 3M+ Polish companies by name, NIP, KRS, PKD or region",
+          "Read registry profiles and financial statements",
+          "List management, shareholders and beneficial owners",
+          "Check tenders, EU funds, insolvency and sanctions records"
+        ],
+        "websiteURL": "https://compabase.com",
+        "supportURL": "https://compabase.com/contact",
+        "privacyPolicyURL": "https://compabase.com/privacy",
+        "termsOfServiceURL": "https://compabase.com/terms",
+        "defaultPrompt": [
+          "Look up Orlen in the Polish company register and summarise its latest financials.",
+          "Who are the board members and beneficial owners of KRS 0000028860?",
+          "Has the company with NIP 5260250995 won any public tenders?"
+        ],
+        "brandColor": "#264175",
+        "brandColorDark": "#7FA6E8",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      },
+      "onboardingSkill": "./skills/compabase-company-research/SKILL.md",
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Find a company and its profile",
+              "prompt": "Find the Polish company Orlen and show its registry details.",
+              "tools_triggered": "search_companies, get_company",
+              "expected_behavior": "Identifies Orlen S.A. (KRS 0000028860) and returns its address, legal form, PKD and headline financials."
+            },
+            {
+              "description": "Financial statements",
+              "prompt": "Show revenue and net profit of KRS 0000028860 for the last three reported years.",
+              "tools_triggered": "get_financials",
+              "expected_behavior": "Returns revenue and net profit per fiscal year with currency and reporting periods, without invented values."
+            },
+            {
+              "description": "People and beneficial owners",
+              "prompt": "Who sits on the management board of KRS 0000028860 and who are its beneficial owners?",
+              "tools_triggered": "get_company_people, get_company_beneficiaries",
+              "expected_behavior": "Lists current management board members and the beneficial owners recorded in the CRBR register."
+            },
+            {
+              "description": "Public tenders",
+              "prompt": "Has Budimex (KRS 0000001764) won public tenders recently?",
+              "tools_triggered": "search_companies, get_company_public_tenders",
+              "expected_behavior": "Returns recent public procurement awards with buyer, value and date, or states that none are recorded."
+            },
+            {
+              "description": "Search with filters",
+              "prompt": "How many limited liability companies in Gdansk have PKD 62.01 (software development)?",
+              "tools_triggered": "count_companies",
+              "expected_behavior": "Returns a single count of matching companies and explains the filters used."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Account changes are not supported",
+              "prompt": "Delete my Compabase API keys and cancel my subscription."
+            },
+            {
+              "description": "Private personal data",
+              "prompt": "Give me the home address and phone number of the CEO of Orlen."
+            },
+            {
+              "description": "Non-Polish company",
+              "prompt": "Show the financial statements of Apple Inc. from the US SEC."
+            }
+          ]
+        },
+        "demo_recording_url": "https://compabase.com/chatgpt-demo",
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments. Users manage their Compabase plan on compabase.com."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "Initial release: company search, registry profiles, financial statements, people, beneficial owners and public-register checks for Polish companies."
+      }
+    }
+  }
+}
