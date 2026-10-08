@@ -27,4 +27,4 @@ Use the Compabase tools when the user asks about a Polish company, wants to veri
 
 ## Account
 
-The tools use the user's connected Compabase account and count toward its monthly MCP query limit. `get_usage` and `get_plan` show the remaining quota. The plugin cannot change the account, keys, watchlist or billing.
+The tools use the user's connected Compabase account. `get_usage` shows the remaining query quota. The plugin cannot change the account, keys, watchlist or billing.
