@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "compabase",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Polish company data for 3M+ companies from the KRS and CEIDG registers: financial statements, management, beneficial owners, public tenders, EU funds, insolvency and sanctions records.",
   "author": {
     "name": "Content Writer LLC",
@@ -105,7 +105,7 @@
       },
       "publication": {
         "countries": [],
-        "release_notes": "Initial release: company search, registry profiles, financial statements, people, beneficial owners and public-register checks for Polish companies."
+        "release_notes": "Clearer tool names and descriptions for the EU grants and articles of association tools."
       }
     }
   }

@@ -14,9 +14,9 @@ Use the Compabase tools when the user asks about a Polish company, wants to veri
 3. Add detail only as needed:
    - `get_financials` for full statements by year, `get_company_rankings` for its position in its industry or region, `get_financial_stats` for sector benchmarks.
    - `get_company_people` (management and supervisory boards, shareholders) and `get_company_beneficiaries` (beneficial owners).
-   - Public money: `get_company_public_tenders`, `get_company_eu_tenders`, `get_company_eu_funds`, `get_company_public_aid`, `get_company_procurement`.
+   - Public money: `get_company_public_tenders`, `get_company_eu_tenders`, `get_company_eu_funds`, `get_company_public_aid`, `get_company_eu_grants`.
    - Risk checks: `get_company_debt_registry` (insolvency and restructuring), `get_company_court_gazette`, `get_company_sanctions`, `get_company_financial_supervision`, `get_company_secured_liabilities`.
-   - Other registers: `get_company_stock_market`, `get_company_energy_licenses`, `get_company_waste_registry`, `get_company_articles`.
+   - Other registers: `get_company_stock_market`, `get_company_energy_licenses`, `get_company_waste_registry`, `get_company_articles_of_association`.
 4. `count_companies` answers "how many" questions without listing companies.
 
 ## Answering
