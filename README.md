@@ -202,3 +202,7 @@ This repository is also a Claude Code plugin (MCP server + skill):
 /plugin marketplace add ContentWriterco/Compabase-MCP
 /plugin install compabase@compabase-plugins
 ```
+
+## Setup guides
+
+Step-by-step setup guides for Claude, ChatGPT, Gemini, Grok, Le Chat, Perplexity, Cursor, VS Code and Claude Code: https://compabase.com/docs/mcp/connect/

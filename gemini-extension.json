@@ -1,11 +1,11 @@
 {
   "name": "compabase",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Polish company data: 3M+ companies from KRS and CEIDG with financial statements, owners, public tenders and risk checks.",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
     "compabase": {
-      "httpUrl": "https://compabase.com/api/mcp/claude"
+      "httpUrl": "https://compabase.com/api/mcp/connect"
     }
   }
 }
