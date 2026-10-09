@@ -20,5 +20,8 @@
     "public-procurement",
     "mcp"
   ],
-  "privacyPolicyUrl": "https://compabase.com/privacy"
+  "privacyPolicyUrl": "https://compabase.com/privacy",
+  "supportUrl": "https://compabase.com/contact",
+  "termsOfServiceUrl": "https://compabase.com/terms",
+  "documentationUrl": "https://compabase.com/docs/mcp/connect/claude/"
 }
