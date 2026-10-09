@@ -1,0 +1,19 @@
+{
+  "name": "compabase-plugins",
+  "owner": {
+    "name": "Content Writer LLC",
+    "email": "bartosz@contentwriter.pl"
+  },
+  "plugins": [
+    {
+      "name": "compabase",
+      "source": "./",
+      "description": "Polish company data in Claude: 3M+ companies from KRS and CEIDG with financial statements, owners, public tenders and risk checks. Sign in with your Compabase account.",
+      "version": "1.0.0",
+      "homepage": "https://compabase.com/docs/mcp/"
+    }
+  ],
+  "metadata": {
+    "description": "Polish company data in Claude: 3M+ companies from KRS and CEIDG with financial statements, owners, public tenders and risk checks. Sign in with your Compabase account."
+  }
+}

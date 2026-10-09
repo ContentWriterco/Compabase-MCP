@@ -193,3 +193,12 @@ gemini extensions install https://github.com/ContentWriterco/Compabase-MCP
 ```
 
 On first use Gemini CLI opens the Compabase sign-in page (OAuth). Run `/mcp auth compabase` if it does not.
+
+## Claude Code plugin
+
+This repository is also a Claude Code plugin (MCP server + skill):
+
+```
+/plugin marketplace add ContentWriterco/Compabase-MCP
+/plugin install compabase@compabase-plugins
+```

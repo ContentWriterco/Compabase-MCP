@@ -1,0 +1,23 @@
+{
+  "name": "compabase",
+  "version": "1.0.0",
+  "description": "Polish company data in Claude: 3M+ companies from KRS and CEIDG with financial statements, owners, public tenders and risk checks. Sign in with your Compabase account.",
+  "author": {
+    "name": "Content Writer LLC",
+    "email": "bartosz@contentwriter.pl",
+    "url": "https://compabase.com"
+  },
+  "homepage": "https://compabase.com/docs/mcp/",
+  "repository": "https://github.com/ContentWriterco/Compabase-MCP",
+  "license": "MIT",
+  "keywords": [
+    "poland",
+    "company-data",
+    "krs",
+    "kyb",
+    "due-diligence",
+    "financial-statements",
+    "public-procurement",
+    "mcp"
+  ]
+}

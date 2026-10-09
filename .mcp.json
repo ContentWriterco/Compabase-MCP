@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "compabase": {
+      "type": "http",
+      "url": "https://compabase.com/api/mcp/claude"
+    }
+  }
+}
