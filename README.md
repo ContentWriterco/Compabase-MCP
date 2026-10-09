@@ -185,3 +185,11 @@ See [compabase.com/pricing](https://compabase.com/pricing).
 ## License
 
 MIT
+
+## Gemini CLI
+
+```bash
+gemini extensions install https://github.com/ContentWriterco/Compabase-MCP
+```
+
+On first use Gemini CLI opens the Compabase sign-in page (OAuth). Run `/mcp auth compabase` if it does not.
