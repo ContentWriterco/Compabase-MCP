@@ -16,6 +16,20 @@ info:
     `2024-11-05`. Supported methods: `initialize`, `tools/list`, `tools/call`, `ping`,
     `notifications/initialized`.
 
+    ### Client guides
+    Step-by-step setup for Claude, ChatGPT, Gemini, Gemini CLI, Grok, Le Chat, Perplexity, Cursor, VS Code and Claude Code:
+    [compabase.com/docs/mcp/connect](https://compabase.com/docs/mcp/connect/). OAuth clients use
+    `https://compabase.com/api/mcp/connect` (sign in once, no key to copy).
+
+    ### Topic servers
+    Curated, read-only tool sets on the same data and account (same key, OAuth sign-in and quota):
+
+    - **Polish public tenders** - `https://compabase.com/api/mcp/tenders` - `search_tenders` (open and awarded BZP/TED notices) plus company tender, EU funds and state aid tools. [GitHub](https://github.com/ContentWriterco/Polish-Public-Tenders-MCP)
+    - **Polish KYB / due diligence** - `https://compabase.com/api/mcp/kyb` - registry profile, people, beneficial owners, insolvency, court gazette, sanctions, KNF. [GitHub](https://github.com/ContentWriterco/Polish-KYB-MCP)
+    - **Polish company financials** - `https://compabase.com/api/mcp/financials` - financial statements, rankings and sector benchmarks. [GitHub](https://github.com/ContentWriterco/Polish-Company-Financials-MCP)
+
+    Clients that support MCP OAuth (ChatGPT, Claude) can sign in with a Compabase account instead of pasting a key.
+
     ### Authentication
     You can connect **without a key** to create an account from the agent:
 
@@ -26,8 +40,9 @@ info:
 
     After that, send the key on every request:
 
-    - Preferred: `Authorization: Bearer mcpk_…`
-    - Alternative: `X-API-Key: mcpk_…`
+    - Preferred (Headers): `Authorization: Bearer mcpk_…` or `X-API-Key: mcpk_…`
+    - Claude.ai Remote Connectors: append `?apiKey=mcpk_…` to the server URL (e.g. `https://compabase.com/mcp?apiKey=mcpk_…`)
+    - In-chat fallback: provide `apiKey: "mcpk_…"` in tool call arguments
 
     Keys can also be created in
     <a href="/integrations?tab=mcp" target="_blank" rel="noopener noreferrer">Integrations → MCP</a>.
@@ -59,7 +74,7 @@ servers:
 tags:
   - name: Quickstart
     description: |
-      Connect your AI client to the Compabase MCP endpoint. You can start **without a key** –
+      Connect your AI client to the Compabase MCP endpoint. You can start **without a key** —
       ask the agent to sign you up (`request_signup`); after email confirmation it writes
       `mcpk_…` into the client config. You can also create a key in
       <a href="/integrations?tab=mcp" target="_blank" rel="noopener noreferrer">Integrations → MCP</a>.
@@ -82,11 +97,29 @@ tags:
       Identify a company with `name`, `krs`, or `nip` when a tool accepts them. Monetary filters
       default to PLN unless noted. City values from KRS are typically uppercase; voivodeships lowercase.
 
-      Register enrichments: `get_company_sudop` (public aid / de minimis), `get_company_bzp` (procurement),
-      `get_company_ted` (EU TED tenders), `get_company_ure` (energy concessions), `get_company_bdo` (BDO waste/packaging),
-      `get_company_gpw` (Warsaw Stock Exchange listings and delayed quotes),
-      `get_company_msig` (Court and Commercial Gazette), `get_company_krz` (insolvency),
-      `get_company_beneficiaries` (CRBR for KRS companies; all names, never PESEL).
+      Register enrichments (live list):
+
+      - `get_company_public_aid` — SUDOP public aid / grants for a company
+      - `get_company_eu_funds` — European Funds (Fundusze Europejskie) projects for a company
+      - `get_company_procurement` — European Commission FTS awards for a company
+      - `get_company_public_tenders` — BZP public procurement data
+      - `get_company_energy_licenses` — URE energy concessions for a company
+      - `get_company_public_contracts` — contracts from Poland's Central Register of Contracts (CRU JSFP, Ministry of Finance) where the company is the contractor of a public-sector unit (ministries, municipalities, schools, hospitals)
+      - `get_company_nfz_contracts` — contracts between the company (as a healthcare provider) and Poland's National Health Fund (NFZ)
+      - `get_company_nfz_queues` — NFZ (National Health Fund) waiting lists of a healthcare provider
+      - `get_company_trademarks` — Polish Patent Office (UPRP) trademarks owned or applied for by the company
+      - `get_company_procurement_disputes` — National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company
+      - `get_company_waste_registry` — BDO waste and packaging register data
+      - `get_company_stock_market` — Warsaw Stock Exchange listing for a company
+      - `get_company_eu_tenders` — TED EU-threshold public procurement
+      - `get_company_court_gazette` — Court and Commercial Gazette (MSiG) notices for one company
+      - `get_company_sanctions` — Official MSWiA sanctions listing for one company
+      - `get_company_debt_registry` — KRZ insolvency / restructuring proceedings
+      - `get_company_financial_supervision` — KNF register (Polish Financial Supervision Authority): licences and entries of a financial company
+      - `get_company_secured_liabilities` — Secured liabilities from the latest financial-statement notes (period ending 2025+): mortgages (hipoteki), registered / financial pledges (zastawy), transfers of ownership, assignments
+      - `get_company_real_estate` — Company real estate from the latest financial statement (period ending 2025+): land incl. perpetual usufruct, buildings and premises, investment property (book values in PLN/EUR/USD) plus property locations named as mortgage collateral (address, land-register KW numbers, creditor)
+      - `get_company_beneficiaries` — CRBR beneficial owners for a KRS company
+      - `get_company_articles` — full text of the company's articles of association or statute (umowa spółki / statut) from RAR (Repozytorium Akt Rejestrowych)
   - name: Account
     description: |
       Account management: usage, plan, watchlist, API/MCP keys, webhooks, BYOK, notifications.
@@ -392,7 +425,7 @@ paths:
       operationId: search_companies
       description: |
         Search and filter Polish KRS companies (spółki). Compabase also holds the full CEIDG/JDG register;
-        this tool does not browse JDG – those without a public contact email are hidden because of RODO.
+        this tool does not browse JDG — those without a public contact email are hidden because of RODO.
         Default `fields=summary` returns compact rows
         (name, NIP, KRS, location, PKD, latest financials, email/phone/website).
         `fields=contacts_only` is a CRM list. `fields=full` returns every company_search column
@@ -487,7 +520,7 @@ paths:
       description: |
         Registry profile and headline financials for **one** latest filed period
         (`financials.period_to`). Revenue, profit, costs, and assets in this response are that
-        same period – there is no nested summary from a different year. Contacts (email, phone,
+        same period — there is no nested summary from a different year. Contacts (email, phone,
         website) are included when on record. NIP lookup also returns a CEIDG/JDG firm when it
         has a public contact email (RODO). Full balance-sheet line items and earlier years
         are in `get_financials`.
@@ -710,11 +743,11 @@ paths:
                 p75: 3500000
                 n_companies: 42000
 
-  /tools/get_company_sudop:
+  /tools/get_company_public_aid:
     post:
       tags: [Tools]
-      summary: get_company_sudop
-      operationId: get_company_sudop
+      summary: get_company_public_aid
+      operationId: get_company_public_aid
       description: |
         SUDOP public aid / de minimis: totals plus the full case list (amounts, grantor, purpose).
         Keyed by NIP. If several KRS entities share the same NIP, the tool still returns SUDOP for that NIP.
@@ -755,13 +788,13 @@ paths:
                       gross_pln: 274867.77
                       nominal_pln: 274867.77
 
-  /tools/get_company_fe:
+  /tools/get_company_eu_funds:
     post:
       tags: [Tools]
-      summary: get_company_fe
-      operationId: get_company_fe
+      summary: get_company_eu_funds
+      operationId: get_company_eu_funds
       description: |
-        European Funds (Fundusze Europejskie) projects for one company – official MFiPR lists,
+        European Funds (Fundusze Europejskie) projects for one company — official MFiPR lists,
         EU co-financing, programme and dates. Keyed by NIP after unique name match.
         This is cohesion/shared-management funds, not TED procurement, not FTS Commission grants,
         and not SUDOP state aid.
@@ -799,15 +832,15 @@ paths:
                     start_date: "2023-01-15"
                     end_date: "2025-12-31"
 
-  /tools/get_company_fts:
+  /tools/get_company_procurement:
     post:
       tags: [Tools]
-      summary: get_company_fts
-      operationId: get_company_fts
+      summary: get_company_procurement
+      operationId: get_company_procurement
       description: |
-        European Commission Financial Transparency System awards for one company – Horizon, LIFE,
+        European Commission Financial Transparency System awards for one company — Horizon, LIFE,
         Erasmus and other direct/indirect-management grants. Keyed by NIP (VAT).
-        Not cohesion funds (use `get_company_fe`) and not TED procurement.
+        Not cohesion funds (use `get_company_eu_funds`) and not TED procurement.
 
         **Example prompts:** "Any EU Commission grants for this company?" · "FTS awards for NIP …"
       requestBody:
@@ -841,11 +874,11 @@ paths:
                     amount_eur: 200000
                     subject: "Clean energy research"
 
-  /tools/get_company_bzp:
+  /tools/get_company_public_tenders:
     post:
       tags: [Tools]
-      summary: get_company_bzp
-      operationId: get_company_bzp
+      summary: get_company_public_tenders
+      operationId: get_company_public_tenders
       description: |
         BZP public procurement: award/notice totals plus the full award and buyer lists (`recent_awards`, `recent_as_buyer`).
         Keyed by NIP. Shared-NIP companies still resolve to BZP for that NIP.
@@ -888,11 +921,11 @@ paths:
                       publication_date: "2026-08-06T11:21:52.379Z"
                   recent_as_buyer: []
 
-  /tools/get_company_ure:
+  /tools/get_company_energy_licenses:
     post:
       tags: [Tools]
-      summary: get_company_ure
-      operationId: get_company_ure
+      summary: get_company_energy_licenses
+      operationId: get_company_energy_licenses
       description: |
         URE energy concessions: electricity, gas, heat, liquid fuels, plus pending applications.
         Keyed by NIP. Totals plus the full item list (type, validity, PDF link).
@@ -932,11 +965,11 @@ paths:
                       valid_to: "2040-12-31"
                       is_active: true
 
-  /tools/get_company_bdo:
+  /tools/get_company_waste_registry:
     post:
       tags: [Tools]
-      summary: get_company_bdo
-      operationId: get_company_bdo
+      summary: get_company_waste_registry
+      operationId: get_company_waste_registry
       description: |
         BDO waste and packaging register: registration number, EUP site count, activity flags,
         and headquarters decisions with issue and validity dates. Keyed by NIP.
@@ -976,15 +1009,17 @@ paths:
                       issuing_authority: Marszałek Województwa Mazowieckiego
                       kind_flags: ["waste_generation"]
 
-  /tools/get_company_gpw:
+  /tools/get_company_stock_market:
     post:
       tags: [Tools]
-      summary: get_company_gpw
-      operationId: get_company_gpw
+      summary: get_company_stock_market
+      operationId: get_company_stock_market
       description: |
         Warsaw Stock Exchange listing: ticker, ISIN, market (GPW main / NewConnect / GlobalConnect),
-        last close and change, market cap, shares outstanding, EPS, P/E, dividend per share and yield.
-        Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars – not full OHLCV history.
+        last close and change, market cap, shares outstanding, TTM EPS, TTM P/E
+        (falls back to last annual filing), last quarterly results, next earnings date,
+        dividend per share and yield.
+        Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars — not full OHLCV history.
         Keyed by NIP.
 
         **Example prompts:** “Is this company listed on GPW?” · “Ticker, last close and P/E for Orlen”
@@ -1021,8 +1056,13 @@ paths:
                   change_pct: 0.93
                   market_cap: 90919000000
                   last_volume: 1250000
-                  eps: 8.41
-                  pe_ratio: 9.29
+                  eps: 10.94
+                  eps_ttm: 10.94
+                  eps_annual: 2.28
+                  pe_ratio: 14.86
+                  pe_basis: ttm
+                  next_report_at: "2026-11-19"
+                  next_report_label: Publikacja skonsolidowanego raportu za III kwartał 2026 roku.
                   dividend_per_share: 4.15
                   dividend_yield: 5.31
                   dividend_year: 2025
@@ -1038,11 +1078,11 @@ paths:
                       close: 78.12
                       volume: 1250000
 
-  /tools/get_company_ted:
+  /tools/get_company_eu_tenders:
     post:
       tags: [Tools]
-      summary: get_company_ted
-      operationId: get_company_ted
+      summary: get_company_eu_tenders
+      operationId: get_company_eu_tenders
       description: |
         TED EU-threshold public procurement: awards as contractor and notices as buyer.
         Keyed by NIP. Totals plus the full award/buyer notice lists.
@@ -1083,11 +1123,11 @@ paths:
                       amounts_currency: PLN
                   recent_as_buyer: []
 
-  /tools/get_company_msig:
+  /tools/get_company_court_gazette:
     post:
       tags: [Tools]
-      summary: get_company_msig
-      operationId: get_company_msig
+      summary: get_company_court_gazette
+      operationId: get_company_court_gazette
       description: |
         Court and Commercial Gazette (MSiG) notices for one company.
         Matched by KRS or NIP (creditor calls, dissolution, mergers, liquidation).
@@ -1125,11 +1165,11 @@ paths:
                       title: Wezwanie wierzycieli
                       monitor_number: "12/2026"
 
-  /tools/get_company_krz:
+  /tools/get_company_debt_registry:
     post:
       tags: [Tools]
-      summary: get_company_krz
-      operationId: get_company_krz
+      summary: get_company_debt_registry
+      operationId: get_company_debt_registry
       description: |
         KRZ insolvency / restructuring proceedings.
         KRS companies via `company_krz`; sole proprietors via CEIDG KRZ by NIP.
@@ -1171,6 +1211,149 @@ paths:
                       start_date: "2025-07-21"
                       end_date: "2026-02-19"
                       authority_name: null
+
+  /tools/get_company_sanctions:
+    post:
+      tags: [Tools]
+      summary: get_company_sanctions
+      operationId: get_company_sanctions
+      description: |
+        Official MSWiA sanctions listing for one company, matched by KRS, NIP, or REGON.
+        `sanctions` is null when the company is not listed. Entries include restrictive
+        measures and the legal grounds. The same object is included on `get_company`.
+
+        SQL: `company_sanctions` joined to `sanctions_entries`.
+
+        **Example prompts:** “Is this company on a sanctions list?” · “What measures apply?”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000795863"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `sanctions` (or null)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registry_number:
+                    type: string
+                  nip:
+                    type: string
+                  sanctions:
+                    nullable: true
+                    type: object
+              example:
+                registry_number: "0000795863"
+                nip: "5252796604"
+                sanctions:
+                  entries:
+                    - source: pl_mswia
+                      name: EUROCHEM POLSKA Sp. z o.o.
+                      listed_on: "2022-04-26"
+                      removed_on: null
+                      source_url: https://www.gov.pl/web/mswia/lista-osob-i-podmiotow-objetych-sankcjami
+                      measures: |
+                        a. zamrożenie wszystkich środków finansowych i zasobów gospodarczych,
+                        b. zakaz udostępniania podmiotowi wpisanemu na listę – bezpośrednio lub pośrednio – jakichkolwiek środków finansowych lub zasobów gospodarczych,
+                        c. zakaz świadomego i umyślnego udziału w działaniach, których celem lub skutkiem jest ominięcie środków wskazanych w lit. a i b,
+                        d. wykluczenie z postępowania o udzielenie zamówienia publicznego lub konkursu
+                      justification: |
+                        A. Melniczenko jest rosyjskim przemysłowcem, właścicielem przedsiębiorstwa EuroChem, będącego jednym z głównych producentów nawozów i przedsiębiorstwa węglowego SUEK. Należy do kręgu najbardziej wpływowych rosyjskich przedsiębiorców, mających bliskie powiązania z rządem rosyjskim. Działa zatem w sektorach gospodarczych zapewniających istotne źródło dochodów rządowi Federacji Rosyjskiej, odpowiedzialnemu za aneksję Krymu i agresję przeciwko Ukrainie. Andriej Melniczenko objęty jest sankcjami na podstawie rozporządzenia Rady (UE) nr 269/2014, zał. I, poz. 721. A ponadto sankcje na wymienionego nałożyła Wielka Brytania oraz Ukraina.
+
+                        EUROCHEM POLSKA sp. z o. o. wytransferowała do spółki EuroChem Group AG ponad 30% przychodu osiągniętego w 2020 r.
+
+                        Nałożenie sankcji na spółkę EuroChem Polska sp. z o.o. przyczyni się do zmniejszenia przychodów wymienionej firmy oraz podmiotów osiągających korzyści z jej działalności, a tym samym pośrednio wpłynie na zmniejszenie przychodów podmiotu powiązanego z A. Melniczenką.
+                      measures_i18n:
+                        en: |
+                          a. freezing of all funds and economic resources,
+                          b. prohibition on making available to the listed entity – directly or indirectly – any funds or economic resources,
+                          c. prohibition on knowingly and intentionally participating in activities whose purpose or effect is to circumvent the measures specified in lit. a and b,
+                          d. exclusion from a public procurement procedure or competition
+                        de: |
+                          a. Einfrieren aller Gelder und wirtschaftlichen Ressourcen,
+                          b. Verbot der unmittelbaren oder mittelbaren Bereitstellung jeglicher Gelder oder wirtschaftlicher Ressourcen für die gelistete Einrichtung,
+                          c. Verbot der wissentlichen und vorsätzlichen Beteiligung an Handlungen, deren Zweck oder Wirkung die Umgehung der in lit. a und b genannten Maßnahmen ist,
+                          d. Ausschluss von einem Verfahren zur Vergabe eines öffentlichen Auftrags oder von einem Wettbewerb
+                      justification_i18n:
+                        en: |
+                          A. Melniczenko is a Russian industrialist and the owner of EuroChem, one of the main fertiliser producers, and the coal company SUEK. He is among the most influential Russian businesspeople with close ties to the Russian government. He is therefore active in economic sectors that provide a significant source of revenue to the government of the Russian Federation, which is responsible for the annexation of Crimea and the aggression against Ukraine. Andriej Melniczenko is subject to sanctions under Council Regulation (EU) No 269/2014, Annex I, entry 721. In addition, the United Kingdom and Ukraine have imposed sanctions on him.
+
+                          EUROCHEM POLSKA sp. z o. o. transferred more than 30% of the revenue it earned in 2020 r. to EuroChem Group AG.
+
+                          Imposing sanctions on EuroChem Polska sp. z o.o. will reduce the revenue of that company and of entities benefiting from its activities, and will thereby indirectly reduce the revenue of an entity linked to A. Melniczenko.
+                        de: |
+                          A. Melniczenko ist ein russischer Industrieller und Eigentümer von EuroChem, einem der wichtigsten Düngemittelhersteller, sowie des Kohleunternehmens SUEK. Er gehört zum Kreis der einflussreichsten russischen Unternehmer mit engen Verbindungen zur russischen Regierung. Er ist somit in Wirtschaftssektoren tätig, die der Regierung der Russischen Föderation, die für die Annexion der Krim und die Aggression gegen die Ukraine verantwortlich ist, eine wesentliche Einnahmequelle bieten. Andriej Melniczenko unterliegt Sanktionen gemäß der Verordnung (EU) Nr. 269/2014 des Rates, Anhang I, Eintrag 721. Darüber hinaus haben das Vereinigte Königreich und die Ukraine Sanktionen gegen ihn verhängt.
+
+                          EUROCHEM POLSKA sp. z o. o. überwies mehr als 30 % der im Jahr 2020 r. erzielten Einnahmen an EuroChem Group AG.
+
+                          Die Verhängung von Sanktionen gegen EuroChem Polska sp. z o.o. wird dazu beitragen, die Einnahmen dieses Unternehmens und der Einrichtungen, die von seiner Tätigkeit profitieren, zu verringern und damit mittelbar die Einnahmen einer mit A. Melniczenko verbundenen Einrichtung zu senken.
+
+  /tools/get_company_nfz_queues:
+    post:
+      tags: [Tools]
+      summary: get_company_nfz_queues
+      operationId: get_company_nfz_queues
+      description: |
+        NFZ (National Health Fund) waiting lists of a healthcare provider from the NFZ "Terminy leczenia" API:
+        every NFZ-funded service it runs a waiting list for, per location, with the NFZ forecast waiting time
+        (stable and urgent case), people waiting, average wait, address, phone, children and accessibility.
+        Sorted by shortest wait; optional `service` and `town` filters. Keyed by NIP. The forecast is not a booking.
+
+        **Example prompts:** “How long is the wait for an ophthalmologist at this clinic?” · “NFZ waiting lists of NIP 7792236896 in Poznań”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CompanyIdentityArgs'
+                - type: object
+                  properties:
+                    service:
+                      type: string
+                      description: Fragment of the service name, e.g. `okulist`, `rezonans`.
+                    town:
+                      type: string
+                      description: Town or district, e.g. `Poznań`.
+                    limit:
+                      type: integer
+                      default: 50
+                      maximum: 400
+            example:
+              krs: "0000446005"
+              service: alergolog
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, `queues` (null when the provider has no waiting lists)
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000446005"
+                nip: "7792236896"
+                queues:
+                  queues_count: 30
+                  places_count: 2
+                  data_as_of: "2026-10-10"
+                  matched: 2
+                  items:
+                    - benefit_display: Poradnia alergologiczna
+                      town: Poznań-Grunwald
+                      address: Kosynierska 10
+                      phone: 061 86 38 524
+                      wait_days: 37
+                      wait_label_pl: 1 mies. 1 tydz.
+                      urgent_wait_label_pl: 1 dzień
+                      awaiting: 126
+                      average_days: 56
 
   /tools/get_company_beneficiaries:
     post:
@@ -1238,7 +1421,7 @@ paths:
         Run a **read-only** SQL `SELECT` (or `WITH … SELECT`) against the Compabase database.
         Use this for custom joins and multi-step aggregations the other tools cannot express.
         Prefer dedicated tools (`search_companies`, `get_financials`, and similar) when they
-        cover the question – they return smaller, more predictable payloads.
+        cover the question — they return smaller, more predictable payloads.
         CRBR names for KRS companies: `company_crbr_*_public` (all companies; birth_year only).
         Raw `company_crbr_beneficiaries` is rejected. JDG people live in `ceidg_chat` (email required).
 
@@ -1750,7 +1933,7 @@ paths:
       operationId: export_companies
       description: |
         Bulk file export of companies matching filters (CSV / XLSX / JSON). Up to 500 rows per call.
-        Default `fields=contacts_only` is name, NIP, KRS, city, email, phone, website – small enough
+        Default `fields=contacts_only` is name, NIP, KRS, city, email, phone, website — small enough
         for MCP clients. `fields=summary` adds location, PKD, latest revenue/profit.
         `fields=full` is the complete dump (change history, rankings, people, enrichments) and often
         exceeds client limits.
@@ -2065,11 +2248,11 @@ paths:
                 configured: false
                 message: "openai key removed."
 
-  /tools/batch_add_to_watchlist:
+  /tools/add_watchlist_batch:
     post:
       tags: [Account]
-      summary: batch_add_to_watchlist
-      operationId: batch_add_to_watchlist
+      summary: add_watchlist_batch
+      operationId: add_watchlist_batch
       description: |
         Add multiple companies to the watchlist in a single call. Provide an array of KRS/NIP
         identifiers (max 500 per call). Resolves identifiers, skips already-followed, respects
@@ -2090,7 +2273,7 @@ paths:
               "id": 1,
               "method": "tools/call",
               "params": {
-                "name": "batch_add_to_watchlist",
+                "name": "add_watchlist_batch",
                 "arguments": {
                   "identifiers": ["0000028860", "5213002255", "0000635012"]
                 }
@@ -2156,6 +2339,150 @@ paths:
                 webhook_url: null
                 webhook_active: false
                 updated: true
+
+  /tools/get_company_public_contracts:
+    post:
+      tags: [Tools]
+      summary: get_company_public_contracts
+      operationId: get_company_public_contracts
+      description: "Get contracts from Poland's Central Register of Contracts (CRU JSFP, Ministry of Finance) where the company is the contractor of a public-sector unit (ministries, municipalities, schools, hospitals) — count, total value, top public buyers and the 50 most recent contracts (date, subject, value in PLN, buyer, link). Register live since July 2026; covers contracts below tender thresholds too. Keyed by NIP. Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred for CRU)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_nfz_contracts:
+    post:
+      tags: [Tools]
+      summary: get_company_nfz_contracts
+      operationId: get_company_nfz_contracts
+      description: "Get contracts between the company (as a healthcare provider) and Poland's National Health Fund (NFZ) — value of NFZ contracts in the latest year and every year since 2008, types of care (hospital, outpatient, dental, rehabilitation, pharmacy etc.) with NFZ regional branch, and the largest contracts. Amounts are annual contract values in PLN. Keyed by NIP. Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred for NFZ)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_trademarks:
+    post:
+      tags: [Tools]
+      summary: get_company_trademarks
+      operationId: get_company_trademarks
+      description: "Get Polish Patent Office (UPRP) trademarks owned or applied for by the company — mark name, application number, Nice classes, status (protected / pending / expired / refused), filing, registration and expiry dates, plus counts. Owners are matched by company name and city (UPRP does not publish NIP). Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_procurement_disputes:
+    post:
+      tags: [Tools]
+      summary: get_company_procurement_disputes
+      operationId: get_company_procurement_disputes
+      description: "Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company — as appellant (with upheld / dismissed / discontinued / rejected counts), as participant or as contracting authority — with case numbers, dates, other party and outcome. Parties are matched by name and city. Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_financial_supervision:
+    post:
+      tags: [Tools]
+      summary: get_company_financial_supervision
+      operationId: get_company_financial_supervision
+      description: "KNF register (Polish Financial Supervision Authority): licences and entries of a financial company — banks, payment / e-money institutions, investment firms, insurers, lending institutions, agents. Returns entries with kind, KNF number, status, registration / decision / strike-off dates and services. Keyed by NIP; null when the company has no KNF entry."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_secured_liabilities:
+    post:
+      tags: [Tools]
+      summary: get_company_secured_liabilities
+      operationId: get_company_secured_liabilities
+      description: "Secured liabilities from the latest financial-statement notes (period ending 2025+): mortgages (hipoteki), registered / financial pledges (zastawy), transfers of ownership, assignments — with creditor, amount, secured debt, asset and land-register (KW) numbers. Keyed by KRS; null when nothing is disclosed."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_real_estate:
+    post:
+      tags: [Tools]
+      summary: get_company_real_estate
+      operationId: get_company_real_estate
+      description: "Company real estate from the latest financial statement (period ending 2025+): land incl. perpetual usufruct, buildings and premises, investment property (book values in PLN/EUR/USD) plus property locations named as mortgage collateral (address, land-register KW numbers, creditor). Keyed by KRS; null when the balance sheet shows no real estate (micro and small entities have no such breakdown)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_articles:
+    post:
+      tags: [Tools]
+      summary: get_company_articles
+      operationId: get_company_articles
+      description: "Get full text of the company's articles of association or statute (umowa spółki / statut) from RAR (Repozytorium Akt Rejestrowych). Use when the user asks about: share transfer consent, preemption rights, non-compete clauses, company duration, voting rights, special share classes, representation rules from the deed, or any clause in the founding document. Returns doc metadata + full extracted text. KRS companies only."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP — used to resolve KRS when needed."},"doc_id":{"type":"string","description":"Optional: specific rar_doc_id. Omit for the latest articles / statute."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
 
 components:
   securitySchemes:
@@ -2374,6 +2701,10 @@ components:
           type: string
         pkd:
           type: string
+          description: Primary PKD code prefix, e.g. '80.10', '80.10.Z', or '80' (same prefix matching as search_companies).
+        all_pkd:
+          type: string
+          description: Match any PKD code in the company's activity list (not just primary).
         revenue_min:
           type: number
         revenue_max:

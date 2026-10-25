@@ -79,57 +79,80 @@ Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/
 
 Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
+<!-- tools:start -->
+51 tools on the full server (generated from the live `tools/list`).
+
 ### Onboarding (no key)
 
 | Tool | Purpose |
 |------|---------|
-| `request_signup` | Send a magic-link email; returns `setup_id` |
-| `check_signup` | Poll until email confirmed; returns `mcp_key` **once** |
-| `list_plans` | Billing plans and limits; then `upgrade_plan` |
+| `request_signup` | Start Compabase account setup for an email |
+| `check_signup` | Poll a request_signup session |
+| `list_plans` | List Compabase billing plans and limits |
 
 ### Company data
 
 | Tool | Purpose |
 |------|---------|
-| `search_companies` | Filter KRS companies (name, PKD, city, voivodeship, financials, status, contacts). Up to 50 rows. Does not browse JDG. |
-| `count_companies` | Count matching KRS companies (same filters, no sort/limit) |
-| `get_company` | One profile + headline financials for the **latest** filed period |
-| `get_financials` | Full P&L / balance-sheet metrics per fiscal period |
-| `get_company_people` | Board, shareholders, proxies, other roles |
-| `get_company_rankings` | Revenue rank in PKD / region / Poland |
-| `get_financial_stats` | Sector/region/PKD aggregates (median, p25–p90, n, …) |
-| `execute_sql` | Read-only `SELECT` / `WITH … SELECT` for custom joins |
+| `search_companies` | Search and filter Polish KRS companies (spółki) |
+| `get_company` | Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs… |
+| `get_financials` | Get full financial statement metrics per fiscal period |
+| `get_company_people` | Get people associated with a company |
+| `count_companies` | Count KRS companies matching given filters |
+| `execute_sql` | Execute a read-only SQL SELECT query against the Compabase database |
+| `get_company_rankings` | Get a company's revenue rank positions within its industry (PKD), region (voivodeship), and all of Poland |
+| `get_financial_stats` | Get precomputed aggregate financial statistics for a sector, region, PKD branch, or country |
 
 ### Register enrichments
 
-| Tool | Source |
-|------|--------|
-| `get_company_sudop` | SUDOP public aid / de minimis (NIP) |
-| `get_company_bzp` | BZP procurement awards and buyer notices (NIP) |
-| `get_company_ted` | TED EU-threshold tenders (NIP) |
-| `get_company_ure` | URE energy concessions (NIP) |
-| `get_company_bdo` | BDO waste / packaging register (NIP) |
-| `get_company_gpw` | GPW / NewConnect / GlobalConnect listing + delayed quotes |
-| `get_company_fe` | European Funds (MFiPR lists, cohesion) |
-| `get_company_fts` | European Commission FTS grants (Horizon, LIFE, …) |
-| `get_company_msig` | Court and Commercial Gazette (MSiG) |
-| `get_company_krz` | KRZ insolvency / restructuring (KRS or CEIDG NIP) |
-| `get_company_beneficiaries` | CRBR beneficial owners (KRS). Names only – **never PESEL** |
+| Tool | Purpose |
+|------|---------|
+| `get_company_public_aid` | Get SUDOP public aid / grants for a company |
+| `get_company_eu_funds` | Get European Funds (Fundusze Europejskie) projects for a company |
+| `get_company_procurement` | Get European Commission FTS awards for a company |
+| `get_company_public_tenders` | Get BZP public procurement data |
+| `get_company_energy_licenses` | Get URE energy concessions for a company |
+| `get_company_public_contracts` | Get contracts from Poland's Central Register of Contracts (CRU JSFP, Ministry of Finance) where the company is the contractor of a public-sector unit… |
+| `get_company_nfz_contracts` | Get contracts between the company (as a healthcare provider) and Poland's National Health Fund (NFZ) |
+| `get_company_nfz_queues` | Get NFZ (National Health Fund) waiting lists of a healthcare provider |
+| `get_company_trademarks` | Get Polish Patent Office (UPRP) trademarks owned or applied for by the company |
+| `get_company_procurement_disputes` | Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company |
+| `get_company_waste_registry` | Get BDO waste and packaging register data |
+| `get_company_stock_market` | Get Warsaw Stock Exchange listing for a company |
+| `get_company_eu_tenders` | Get TED EU-threshold public procurement |
+| `get_company_court_gazette` | Get Court and Commercial Gazette (MSiG) notices for one company |
+| `get_company_sanctions` | Official MSWiA sanctions listing for one company |
+| `get_company_debt_registry` | Get KRZ insolvency / restructuring proceedings |
+| `get_company_financial_supervision` | KNF register (Polish Financial Supervision Authority): licences and entries of a financial company |
+| `get_company_secured_liabilities` | Secured liabilities from the latest financial-statement notes (period ending 2025+): mortgages (hipoteki), registered / financial pledges (zastawy)… |
+| `get_company_real_estate` | Company real estate from the latest financial statement (period ending 2025+): land incl. perpetual usufruct, buildings and premises, investment property… |
+| `get_company_beneficiaries` | Get CRBR beneficial owners for a KRS company |
+| `get_company_articles` | Get full text of the company's articles of association or statute (umowa spółki / statut) from RAR (Repozytorium Akt Rejestrowych) |
 
 ### Account (skip `mcp_queries`)
 
 | Tool | Purpose |
 |------|---------|
-| `get_usage` | Period usage: `mcp_queries`, `api_requests`, `export_companies`, `ask_ai_credits`, `watchlist_companies` |
-| `get_plan` | Active plan, limits, prepaid credit, reset date |
-| `list_watchlist` / `add_to_watchlist` / `remove_from_watchlist` / `batch_add_to_watchlist` | Watchlist (KRS or NIP, including CEIDG) |
-| `list_api_keys` / `create_api_key` / `delete_api_key` | REST keys (`cb_…`) |
-| `list_mcp_keys` / `create_mcp_key` / `delete_mcp_key` | MCP keys (`mcpk_…`) |
-| `export_companies` | Bulk CSV / XLSX / JSON (up to 500 rows). Uses the **export** meter, not `mcp_queries` |
-| `upgrade_plan` | Stripe Checkout URL (`pro` / `scale`) |
-| `set_webhook_url` | Watchlist change webhooks |
-| `get_byok_keys` / `set_byok_key` / `delete_byok_key` | BYOK (OpenAI / Claude / Gemini), Pro+ |
-| `set_notification_preferences` | Email alerts for watchlist changes |
+| `get_usage` | Get current billing period usage and remaining quota |
+| `get_plan` | Get the user's active billing plan details |
+| `list_watchlist` | List companies on the user's watchlist with company data (name, KRS, NIP, revenue, city) |
+| `add_to_watchlist` | Add a company to the user's watchlist |
+| `remove_from_watchlist` | Remove a company from the user's watchlist |
+| `list_api_keys` | List all active REST API keys (cb_…) for the user's account |
+| `create_api_key` | Create a new REST API key (cb_…) |
+| `delete_api_key` | Revoke (deactivate) a REST API key by its ID |
+| `list_mcp_keys` | List all active MCP keys (mcpk_…) for the user's account |
+| `create_mcp_key` | Create a new MCP key (mcpk_…) |
+| `delete_mcp_key` | Revoke (deactivate) an MCP key by its ID |
+| `export_companies` | Bulk file export of companies matching filters (CSV / XLSX / JSON) |
+| `upgrade_plan` | Create a Stripe Checkout session for a plan upgrade |
+| `set_webhook_url` | Configure, view, or remove webhook for watchlist event notifications |
+| `get_byok_keys` | List configured Bring-Your-Own-Key (BYOK) provider keys status |
+| `set_byok_key` | Add or update a BYOK provider API key |
+| `delete_byok_key` | Remove a configured BYOK provider key |
+| `add_watchlist_batch` | Add multiple companies to watchlist in one call |
+| `set_notification_preferences` | Get or update email notification preferences for watchlist changes |
+<!-- tools:end -->
 
 ---
 
