@@ -80,7 +80,7 @@ Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/
 Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
 <!-- tools:start -->
-51 tools on the full server (generated from the live `tools/list`).
+53 tools on the full server (generated from the live `tools/list`).
 
 ### Onboarding (no key)
 
@@ -124,6 +124,8 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_sanctions` | Official MSWiA sanctions listing for one company |
 | `get_company_debt_registry` | Get KRZ insolvency / restructuring proceedings |
 | `get_company_financial_supervision` | KNF register (Polish Financial Supervision Authority): licences and entries of a financial company |
+| `get_company_procurement_counterparties` | Public procurement counterparties of a company from BZP, TED and CRU: the buyers it most often wins contracts from, the contractors it most often awards… |
+| `get_company_filing_timeliness` | Financial statement filing timeliness from KRS register entries (date each annual statement was filed) and the Financial Document Repository: for each recent… |
 | `get_company_secured_liabilities` | Secured liabilities from the latest financial-statement notes (period ending 2025+): mortgages (hipoteki), registered / financial pledges (zastawy)… |
 | `get_company_real_estate` | Company real estate from the latest financial statement (period ending 2025+): land incl. perpetual usufruct, buildings and premises, investment property… |
 | `get_company_beneficiaries` | Get CRBR beneficial owners for a KRS company |
