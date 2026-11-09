@@ -2441,10 +2441,24 @@ paths:
 
         **Does not consume quota.**
 
-        Available events:
-        - `watchlist.company_changed` – registry data or structure changed
+        Available events (default: all):
+        - `watchlist.company_changed` – name, address, PKD, legal form or share capital changed
+        - `watchlist.board_changed` – management board, proxies or supervisory board changed
+        - `watchlist.ownership_changed` – shareholders or beneficial owners (CRBR) changed
+        - `watchlist.status_changed` – liquidation opened or VAT status changed
+        - `watchlist.company_removed_from_registry` – company removed from the register
         - `watchlist.financials_updated` – new financial statement filed
-        - `watchlist.company_removed_from_registry` – company dissolved/removed
+        - `watchlist.filing_overdue` – financial statement overdue
+        - `watchlist.insolvency` – new insolvency/restructuring proceeding (KRZ)
+        - `watchlist.court_gazette` – new notice in the Court and Commercial Gazette (MSiG)
+        - `watchlist.secured_liabilities` – new or changed pledges, mortgages, collateral
+        - `watchlist.sanctions` – new sanctions list match
+        - `watchlist.public_tenders` – new public tender (BZP, TED) or KIO appeal
+        - `watchlist.public_aid` – new state aid (SUDOP) or EU-funded project
+        - `watchlist.licenses` – new URE, KNF or BDO entry
+        - `watchlist.nfz` – new NFZ contract value
+        - `watchlist.trademarks` – new trademark application
+        - `watchlist.job_offers` – new job offers
 
         **Webhook signing:** Every delivery includes header `X-Compabase-Signature: t=<unix>,v1=<hex>`.
         Verify by computing `HMAC-SHA256(raw_body, webhook_secret)` and comparing with `v1`.
