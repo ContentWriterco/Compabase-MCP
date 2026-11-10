@@ -54,7 +54,7 @@
     {
       "name": "request_signup",
       "title": "Request Compabase Signup",
-      "description": "Start Compabase account setup for an email. Sends a magic link. After the user clicks it, poll check_signup with the returned setup_id until status is ready — then you receive an MCP key automatically. Do not ask the user to generate a key in the portal. No auth required.",
+      "description": "Start Compabase account setup for an email. Sends a magic link. After the user clicks it, check_signup with the returned setup_id reports status ready and returns the MCP key automatically. No key has to be generated in the portal. No auth required.",
       "inputSchema": {
         "type": "object",
         "required": [
@@ -293,7 +293,7 @@
     {
       "name": "search_companies",
       "title": "Search Polish Companies",
-      "description": "Search and filter Polish KRS companies (spółki). Compabase also holds the full CEIDG/JDG register; this tool does not browse JDG — those without a public contact email are hidden because of RODO. Default `fields=summary` returns a compact row (name, NIP, KRS, location, PKD, latest financials, email/phone/website) — small enough for MCP clients. `fields=contacts_only` is name/NIP/KRS/city/email/phone/website only. `fields=full` returns every company_search column plus contacts and may exceed client size limits. Use for rankings, sector filters, city/county/region browsing, name search, or NIP/KRS lookup. When a PKD is mostly JDG, a sparse result includes a `hint` (full CEIDG is in the database; listing is RODO-gated). Do not call export_companies just to get a handful of emails or phones.",
+      "description": "Search and filter Polish KRS companies (spółki). Compabase also holds the full CEIDG/JDG register; this tool does not browse JDG — those without a public contact email are hidden because of RODO. Default `fields=summary` returns a compact row (name, NIP, KRS, location, PKD, latest financials, email/phone/website) — small enough for MCP clients. `fields=contacts_only` is name/NIP/KRS/city/email/phone/website only. `fields=full` returns every company_search column plus contacts and may exceed client size limits. Use for rankings, sector filters, city/county/region browsing, name search, or NIP/KRS lookup. When a PKD is mostly JDG, a sparse result includes a `hint` (full CEIDG is in the database; listing is RODO-gated). For a handful of emails or phones, fields=contacts_only here is enough; export_companies is meant for bulk files.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -863,7 +863,7 @@
     {
       "name": "get_financial_stats",
       "title": "Get Sector Financial Statistics",
-      "description": "Get precomputed aggregate financial statistics for a sector, region, PKD branch, or country. Returns median, p25/p75/p90, winsorized mean, mean, total, n_companies, min/max. Use for questions like: what is the median revenue / average profit / assets in industry X or region Y? Prefer median or winsor_mean over mean. cost_wages is PLN-only.",
+      "description": "Get precomputed aggregate financial statistics for a sector, region, PKD branch, or country. Returns median, p25/p75/p90, winsorized mean, mean, total, n_companies, min/max. Use for questions like: what is the median revenue / average profit / assets in industry X or region Y? median and winsor_mean are robust to outliers; mean is not. cost_wages is PLN-only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1776,7 +1776,7 @@
     {
       "name": "export_companies",
       "title": "Export Companies to CSV",
-      "description": "Bulk file export of companies matching filters (CSV / XLSX / JSON). Up to 500 rows per call. Default `fields=contacts_only`: name, NIP, KRS, city, email, phone, website — small enough to use in-chat. `fields=summary` adds location, PKD, latest revenue/profit. `fields=full` is the complete dump (change history, rankings, people, enrichments, CSV twins) and often exceeds MCP client limits. Consumes export quota only after the file is built successfully. For a short list of emails after search_companies, use search with fields=contacts_only instead.",
+      "description": "Bulk file export of companies matching filters (CSV / XLSX / JSON). Up to 500 rows per call. Default `fields=contacts_only`: name, NIP, KRS, city, email, phone, website — small enough to use in-chat. `fields=summary` adds location, PKD, latest revenue/profit. `fields=full` is the complete dump (change history, rankings, people, enrichments, CSV twins) and often exceeds MCP client limits. Consumes export quota only after the file is built successfully. A short list of emails is also available directly from search_companies with fields=contacts_only.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1882,7 +1882,7 @@
     {
       "name": "upgrade_plan",
       "title": "Upgrade Subscription Plan",
-      "description": "Create a Stripe Checkout session for a plan upgrade. Shows current plan and available upgrades. Pass plan_id ('pro' or 'scale') to get a checkout_url on checkout.stripe.com — open it in the browser for the user to pay. Do not send the user to the marketing pricing page.",
+      "description": "Create a Stripe Checkout session for a plan upgrade. Shows current plan and available upgrades. Pass plan_id ('pro' or 'scale') to get a checkout_url on checkout.stripe.com — the user pays there in the browser. The checkout_url is the direct payment page for the selected plan.",
       "inputSchema": {
         "type": "object",
         "properties": {
