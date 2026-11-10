@@ -80,7 +80,7 @@ Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/
 Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
 <!-- tools:start -->
-54 tools on the full server (generated from the live `tools/list`).
+55 tools on the full server (generated from the live `tools/list`).
 
 ### Onboarding (no key)
 
@@ -114,6 +114,7 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_energy_licenses` | Get URE energy concessions for a company |
 | `get_company_public_contracts` | Get contracts from Poland's Central Register of Contracts (CRU JSFP, Ministry of Finance) where the company is the contractor of a public-sector unit… |
 | `get_company_nfz_contracts` | Get contracts between the company (as a healthcare provider) and Poland's National Health Fund (NFZ) |
+| `get_company_group` | Get the corporate group of a Polish company from the global LEI register (GLEIF), supplemented with foreign corporate shareholders from KRS matched to it… |
 | `get_company_nfz_queues` | Get NFZ (National Health Fund) waiting lists of a healthcare provider |
 | `get_company_trademarks` | Get Polish Patent Office (UPRP) trademarks owned or applied for by the company |
 | `get_company_procurement_disputes` | Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company |
