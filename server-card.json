@@ -257,6 +257,10 @@
             "type": "string",
             "description": "Detailed industry: NAICS 6-digit codes, comma-separated (any of them), e.g. '541511,541512'. AI classification of what the company actually does."
           },
+          "service": {
+            "type": "string",
+            "description": "Service the company offers (Compabase services dictionary, from company websites): service name in Polish/English/German, e.g. 'księgowość', 'heat pumps', or slugs from compabase.com/services, comma-separated (any of them)."
+          },
           "niche": {
             "type": "string",
             "description": "Detailed industry in words (Polish), matched against the company's niche, e.g. 'opakowania', 'software house', 'catering'."
@@ -547,6 +551,10 @@
           "naics": {
             "type": "string",
             "description": "Detailed industry: NAICS 6-digit codes, comma-separated (any of them), e.g. '541511,541512'. AI classification of what the company actually does."
+          },
+          "service": {
+            "type": "string",
+            "description": "Service the company offers (Compabase services dictionary, from company websites): service name in Polish/English/German, e.g. 'księgowość', 'heat pumps', or slugs from compabase.com/services, comma-separated (any of them)."
           },
           "niche": {
             "type": "string",
