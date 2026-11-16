@@ -356,7 +356,7 @@
     {
       "name": "get_company",
       "title": "Get Company Profile",
-      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, estimated_value (Ohlson/RIM equity estimate), PKD, address, plus contacts when on record, full address, share capital, representation, recent KRS changes and `company_summary` (company description from the profile, language via `lang`), `vat` (MF white list: VAT status, VAT registration date, bank accounts, removal/restoration, date Compabase checked it). All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
+      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, estimated_value (Ohlson/RIM equity estimate), PKD, address, plus contacts when on record, full address, share capital, representation, recent KRS changes and `company_summary` (company description from the profile, language via `lang`), `logo_url`, `job_offers` (current job offers from the company career page and public job boards), `similar_companies`, `vat` (MF white list: VAT status, VAT registration date, bank accounts, removal/restoration, date Compabase checked it). All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -394,7 +394,7 @@
     {
       "name": "get_financials",
       "title": "Get Full Financial Statements",
-      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. Identify company by name, KRS, or NIP.",
+      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. The standalone row of the latest analysed statement also has `notes` (additional information from the statement): average employment (employees_avg, employees_avg_prev), income tax, profit distribution and dividend, parent and ultimate parent, related-party transactions, shareholdings, guarantees and contingent liabilities, loans, auditor fee, revenue split. Identify company by name, KRS, or NIP.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -431,7 +431,7 @@
     {
       "name": "get_company_people",
       "title": "Get Company People & Management",
-      "description": "Get people associated with a company — management board, supervisory board, shareholders, proxies. Returns display names, role labels, and relationship types (management, supervisory, ownership, procuration). Identify by name, KRS, or NIP.",
+      "description": "Get people associated with a company — management board, supervisory board, shareholders, proxies. Returns display names, role labels, and relationship types (management, supervisory, ownership, procuration). `connected_companies`: other companies where these people hold roles or shares (company connections from the profile). Identify by name, KRS, or NIP.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -646,7 +646,7 @@
     {
       "name": "get_company_rankings",
       "title": "Get Company Sector Rankings",
-      "description": "Get a company's revenue rank positions within its industry (PKD), region (voivodeship), and all of Poland. Returns rows from company_financial_rankings — one row per scope (pkd_full, pkd_division, pkd_section, region, country). PKD scope keys of historical classifications are prefixed with the version: 'v2007:62.01.Z', 'v2004:50', 'v1997:74.84.B' (no prefix = PKD 2025). Use for questions like: where does company X rank in Poland / its industry / its region?",
+      "description": "Get a company's revenue rank positions within its industry (PKD), region (voivodeship), and all of Poland. Returns rows from company_financial_rankings — one row per scope (pkd_full, pkd_division, pkd_section, region, country). PKD scope keys of historical classifications are prefixed with the version: 'v2007:62.01.Z', 'v2004:50', 'v1997:74.84.B' (no prefix = PKD 2025). `benchmark`: the company compared with peers (median, quartiles, mean of revenue, profit, costs, assets) in its industry, region and city, as on the profile. Use for questions like: where does company X rank in Poland / its industry / its region, how does it compare with its industry?",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -672,6 +672,24 @@
               "country"
             ],
             "description": "Optional. Filter to a single scope. Omit to get all scopes."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "PLN",
+              "EUR",
+              "USD"
+            ],
+            "description": "Currency of `benchmark` (default PLN)."
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "pl",
+              "en",
+              "de"
+            ],
+            "description": "Language of benchmark labels (default pl)."
           }
         }
       },
