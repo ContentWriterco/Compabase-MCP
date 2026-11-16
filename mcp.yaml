@@ -904,15 +904,29 @@ paths:
         has a public contact email (RODO). Full balance-sheet line items and earlier years
         are in `get_financials`.
 
+        Also returns the company description from the profile (`company_summary` in `lang`:
+        pl, en or de, falling back to en, pl, de; `company_summary_lang` says which one came back),
+        `logo_url`, `job_offers` (current offers and monthly counts) and `similar_companies`.
+
         **Example prompts:** “Give me a company profile for Allegro.” · “Look up KRS 0000028860.”
+        · “What does this company do, in German?”
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompanyIdentityArgs'
+              allOf:
+                - $ref: '#/components/schemas/CompanyIdentityArgs'
+                - type: object
+                  properties:
+                    lang:
+                      type: string
+                      enum: [pl, en, de]
+                      description: Language of `company_summary` (default pl).
+                      example: en
             example:
               name: Allegro
+              lang: en
       responses:
         '200':
           description: Company profile
@@ -937,6 +951,19 @@ paths:
                   email: kontakt@allegro.pl
                   phone: "226000000"
                   website: allegro.pl
+                company_summary: Allegro runs the largest e-commerce marketplace in Poland.
+                company_summary_lang: en
+                logo_url: https://img.compabase.com/storage/v1/object/public/company-logos/00000000-0000-0000-0000-000000000000.webp
+                job_offers:
+                  active_offers: 3
+                  active_vacancies: 5
+                  offers_12m: 14
+                similar_companies:
+                  - company_name: Example Retail
+                    registry_number: "0000000001"
+                    legal_form: SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ
+                    revenue_total: 900000000
+                    website: example.pl
 
   /tools/get_financials:
     post:
@@ -946,9 +973,16 @@ paths:
       description: |
         Full financial statement metrics per fiscal period: cash, inventories, receivables,
         liabilities, equity, cost breakdown, revenue lines, and other statement columns.
+        Each row has `consolidation_scope` (`standalone` or `consolidated`).
+
+        The standalone row of the latest analysed statement (2025 and later) also has `notes` —
+        additional information from the statement: average employment (`employees_avg`,
+        `employees_avg_prev`), income tax, profit distribution and dividend, parent and ultimate parent,
+        related-party transactions, shareholdings, guarantees and contingent liabilities, loans,
+        auditor fee and revenue split.
 
         **Example prompts:** “Show cash, liabilities, and equity from 2019 to 2023.”
-        · “What was net profit and total assets year by year?”
+        · “What was net profit and total assets year by year?” · “How many people does it employ?”
       requestBody:
         required: true
         content:
@@ -979,11 +1013,18 @@ paths:
                 type: object
                 additionalProperties: true
               example:
-                periods:
-                  - year: 2023
+                financials:
+                  - sf_period_to: "2025-12-31"
+                    consolidation_scope: standalone
                     revenue_total: 120000000
                     profit_net: 8000000
                     cash_and_equivalents: 15000000
+                    notes:
+                      period_to: "2025-12-31"
+                      employees_avg: 99
+                      employees_avg_prev: 94
+                      dividend_amount: 2000000
+                      parent: null
 
   /tools/get_company_people:
     post:
@@ -993,6 +1034,8 @@ paths:
       description: |
         People associated with a company: board members, shareholders, proxies, and other roles.
         Returns display names, role labels, and relationship types.
+        `connected_companies` lists, per person, the other companies where they hold roles or shares
+        (the company connections shown on the profile).
 
         **Example prompts:** “Who sits on the management board?” · “List shareholders for this NIP.”
       requestBody:
@@ -1024,6 +1067,15 @@ paths:
                   - display_name: Jan Kowalski
                     role: Prezes zarządu
                     relationship_type: management
+                connected_companies:
+                  - person: Jan Kowalski
+                    role_here: Prezes zarządu
+                    other_companies:
+                      - company_name: Example Holding
+                        registry_number: "0000000002"
+                        legal_form: SPÓŁKA AKCYJNA
+                        role: Członek rady nadzorczej
+                        holding_percent: null
 
   /tools/get_company_rankings:
     post:
@@ -1033,8 +1085,12 @@ paths:
       description: |
         Revenue rank positions within industry (PKD), region (voivodeship), and all of Poland.
         Returns one row per scope: `pkd_full`, `pkd_division`, `pkd_section`, `region`, `country`.
+        `benchmark` puts the company's revenue, net profit, operating costs and total assets next to
+        peer statistics (median, p25, p75, p90, mean, number of companies) for its industry, region and city,
+        in `currency` (PLN, EUR or USD; default PLN).
 
         **Example prompts:** “Where does this company rank by revenue in Poland and in its industry?”
+        · “How does its revenue compare with the industry median?”
       requestBody:
         required: true
         content:
@@ -1048,6 +1104,14 @@ paths:
                       type: string
                       enum: [pkd_full, pkd_division, pkd_section, region, country]
                       description: Optional. Filter to a single scope. Omit for all.
+                    currency:
+                      type: string
+                      enum: [PLN, EUR, USD]
+                      description: Currency of `benchmark` (default PLN).
+                    lang:
+                      type: string
+                      enum: [pl, en, de]
+                      description: Language of benchmark labels (default pl).
             example:
               name: Allegro
               scope_type: country
@@ -1064,6 +1128,20 @@ paths:
                   - scope_type: country
                     rank: 12
                     n_companies: 500000
+                benchmark:
+                  currency: PLN
+                  company:
+                    period_to: "2025-12-31"
+                    revenue_total: 1000000000
+                  peers:
+                    "pkd_full::47.91.Z":
+                      label: Sprzedaż detaliczna prowadzona przez domy sprzedaży wysyłkowej lub Internet
+                      metrics:
+                        revenue_total:
+                          n_companies: 3200
+                          median: 1450000
+                          p25: 420000
+                          p75: 5100000
 
   /tools/get_financial_stats:
     post:
