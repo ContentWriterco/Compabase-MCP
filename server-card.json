@@ -356,7 +356,7 @@
     {
       "name": "get_company",
       "title": "Get Company Profile",
-      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, estimated_value (Ohlson/RIM equity estimate), PKD, address, plus contacts when on record, full address, share capital, representation, recent KRS changes and `vat` (MF white list: VAT status, VAT registration date, bank accounts, removal/restoration, date Compabase checked it). All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
+      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, estimated_value (Ohlson/RIM equity estimate), PKD, address, plus contacts when on record, full address, share capital, representation, recent KRS changes and `company_summary` (company description from the profile, language via `lang`), `vat` (MF white list: VAT status, VAT registration date, bank accounts, removal/restoration, date Compabase checked it). All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -371,6 +371,15 @@
           "nip": {
             "type": "string",
             "description": "NIP tax number (10 digits, dashes optional)."
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "pl",
+              "en",
+              "de"
+            ],
+            "description": "Language of `company_summary` (default pl). Falls back to en, pl, de when missing."
           }
         }
       },
