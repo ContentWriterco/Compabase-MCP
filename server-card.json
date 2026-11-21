@@ -1062,6 +1062,64 @@
       }
     },
     {
+      "name": "get_company_corporate_tax",
+      "title": "Get Corporate Income Tax (CIT)",
+      "description": "Get corporate income tax (CIT) return data published by the Polish Ministry of Finance for the largest taxpayers (revenue above EUR 50 million), tax capital groups and real estate companies — revenue, tax-deductible costs, income, loss, tax base, tax due and effective rate for each year since 2020, plus national rank by tax due. These are tax-return categories (art. 12/15 CIT Act), not accounting figures: revenue and income differ from the financial statement (use get_financials for accounting revenue and income tax). Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred)."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Corporate Income Tax (CIT)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_public_benefit",
+      "title": "Get Public Benefit Status (OPP, 1.5% of tax)",
+      "description": "Get public benefit organisation (OPP) status of a foundation or association — whether it is on the NIW list eligible for 1.5% of personal income tax, and the amounts it received from taxpayers' 1%/1.5% allocations each year since 2019 with approximate donor counts and national / regional rank. Identify by name or KRS.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Public Benefit Status (OPP, 1.5% of tax)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "get_company_procurement_disputes",
       "title": "Get Procurement Disputes (KIO)",
       "description": "Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company — as appellant (with upheld / dismissed / discontinued / rejected counts), as participant or as contracting authority — with case numbers, dates, other party and outcome. Parties are matched by name and city. Identify company by name, KRS, or NIP.",

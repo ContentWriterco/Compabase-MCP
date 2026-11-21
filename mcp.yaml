@@ -109,6 +109,8 @@ tags:
       - `get_company_group` — the corporate group of a Polish company from the global LEI register (GLEIF), supplemented with foreign corporate shareholders from KRS matched to it: direct parent and ultimate parent (name, country, LEI), subsidiaries and other group companies
       - `get_company_nfz_queues` — NFZ (National Health Fund) waiting lists of a healthcare provider
       - `get_company_trademarks` — Polish Patent Office (UPRP) trademarks owned or applied for by the company
+      - `get_company_corporate_tax` — corporate income tax (CIT) return data published by the Polish Ministry of Finance for the largest taxpayers (revenue above EUR 50 million), tax capital groups and real estate companies
+      - `get_company_public_benefit` — public benefit organisation (OPP) status of a foundation or association
       - `get_company_procurement_disputes` — National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company
       - `get_company_waste_registry` — BDO waste and packaging register data
       - `get_company_stock_market` — Warsaw Stock Exchange listing for a company
@@ -2876,6 +2878,42 @@ paths:
         content:
           application/json:
             schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_corporate_tax:
+    post:
+      tags: [Tools]
+      summary: get_company_corporate_tax
+      operationId: get_company_corporate_tax
+      description: "Get corporate income tax (CIT) return data published by the Polish Ministry of Finance for the largest taxpayers (revenue above EUR 50 million), tax capital groups and real estate companies — revenue, tax-deductible costs, income, loss, tax base, tax due and effective rate for each year since 2020, plus national rank by tax due. These are tax-return categories (art. 12/15 CIT Act), not accounting figures: revenue and income differ from the financial statement (use get_financials for accounting revenue and income tax). Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_public_benefit:
+    post:
+      tags: [Tools]
+      summary: get_company_public_benefit
+      operationId: get_company_public_benefit
+      description: "Get public benefit organisation (OPP) status of a foundation or association — whether it is on the NIW list eligible for 1.5% of personal income tax, and the amounts it received from taxpayers' 1%/1.5% allocations each year since 2019 with approximate donor counts and national / regional rank. Identify by name or KRS."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."}}}
       responses:
         '200':
           description: Tool result (JSON)
