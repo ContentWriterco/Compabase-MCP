@@ -1266,8 +1266,8 @@
     },
     {
       "name": "get_company_sanctions",
-      "title": "Get sanctions listing (MSWiA)",
-      "description": "Official MSWiA sanctions listing for one company. Returns measures and legal grounds when the company is listed; null when it is not. Matched by KRS, NIP, or REGON. The same payload is included on get_company as sanctions.",
+      "title": "Get sanctions and PEP screening",
+      "description": "Sanctions and PEP screening for one company. entries[] with kind=entity: the company itself on a sanctions list (MSWiA, EU, US, UK, World Bank), matched by KRS, NIP or REGON, with measures and legal grounds. kind=person: board members, proxies, owners and beneficial owners matched to sanctions lists (EU, UN, US, UK, MSWiA) or PEP sources (Sejm, Wikidata, boards of state-owned companies), with list_kind, confidence (confirmed / likely / possible), role in the company, public positions and soe_role. Null when nothing matched. The same payload is included on get_company as sanctions.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1286,7 +1286,7 @@
         }
       },
       "annotations": {
-        "title": "Get sanctions listing (MSWiA)",
+        "title": "Get sanctions and PEP screening",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,

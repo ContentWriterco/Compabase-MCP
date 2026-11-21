@@ -124,7 +124,7 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_stock_market` | Get Warsaw Stock Exchange listing for a company |
 | `get_company_eu_tenders` | Get TED EU-threshold public procurement |
 | `get_company_court_gazette` | Get Court and Commercial Gazette (MSiG) notices for one company |
-| `get_company_sanctions` | Official MSWiA sanctions listing for one company |
+| `get_company_sanctions` | Sanctions and PEP screening for one company. entries[] with kind=entity: the company itself on a sanctions list (MSWiA, EU, US, UK, World Bank), matched by… |
 | `get_company_debt_registry` | Get KRZ insolvency / restructuring proceedings |
 | `get_company_financial_supervision` | KNF register (Polish Financial Supervision Authority): licences and entries of a financial company |
 | `get_company_website_facts` | Facts read from the company's own website: opening hours (per weekday), branches/locations with addresses, offer (CPV divisions plus short product/service… |
