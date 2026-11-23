@@ -111,6 +111,7 @@ tags:
       - `get_company_trademarks` — Polish Patent Office (UPRP) trademarks owned or applied for by the company
       - `get_company_corporate_tax` — corporate income tax (CIT) return data published by the Polish Ministry of Finance for the largest taxpayers (revenue above EUR 50 million), tax capital groups and real estate companies
       - `get_company_public_benefit` — public benefit organisation (OPP) status of a foundation or association
+      - `get_company_facilities` — pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company
       - `get_company_procurement_disputes` — National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company
       - `get_company_waste_registry` — BDO waste and packaging register data
       - `get_company_stock_market` — Warsaw Stock Exchange listing for a company
@@ -983,6 +984,10 @@ paths:
         related-party transactions, shareholdings, guarantees and contingent liabilities, loans,
         auditor fee and revenue split.
 
+        Every row also has `insights` — the financial signals shown on the Compabase profile for that
+        year and scope (plain-text sentences, e.g. negative equity or the cash share of current assets),
+        in `lang` with amounts in `currency`; an empty array when there are none.
+
         **Example prompts:** “Show cash, liabilities, and equity from 2019 to 2023.”
         · “What was net profit and total assets year by year?” · “How many people does it employ?”
       requestBody:
@@ -1002,6 +1007,14 @@ paths:
                       type: integer
                       description: Latest fiscal year (e.g. 2023).
                       example: 2023
+                    lang:
+                      type: string
+                      enum: [pl, en, de]
+                      description: Language of `insights` (default pl).
+                    currency:
+                      type: string
+                      enum: [pln, usd, eur]
+                      description: Currency of amounts inside `insights` (default pln).
             example:
               krs: "0000028860"
               year_from: 2019
@@ -2918,6 +2931,24 @@ paths:
         content:
           application/json:
             schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_facilities:
+    post:
+      tags: [Tools]
+      summary: get_company_facilities
+      operationId: get_company_facilities
+      description: "Get pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company — name, type, town, address, operating status, opening date, number of students. Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number (preferred)."},"active_only":{"type":"boolean","description":"Only currently operating facilities."},"limit":{"type":"integer","description":"Max facilities (default 100, max 300)."}}}
       responses:
         '200':
           description: Tool result (JSON)

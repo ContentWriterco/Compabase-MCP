@@ -394,7 +394,7 @@
     {
       "name": "get_financials",
       "title": "Get Full Financial Statements",
-      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. The standalone row of the latest analysed statement also has `notes` (additional information from the statement): average employment (employees_avg, employees_avg_prev), income tax, profit distribution and dividend, parent and ultimate parent, related-party transactions, shareholdings, guarantees and contingent liabilities, loans, auditor fee, revenue split. Identify company by name, KRS, or NIP.",
+      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. The standalone row of the latest analysed statement also has `notes` (additional information from the statement): average employment (employees_avg, employees_avg_prev), income tax, profit distribution and dividend, parent and ultimate parent, related-party transactions, shareholdings, guarantees and contingent liabilities, loans, auditor fee, revenue split. Every row has `insights`: the financial signals shown on the Compabase profile for that year and scope (plain-text sentences, e.g. negative equity, cash share of current assets), in `lang` with amounts in `currency`; [] when none. Identify company by name, KRS, or NIP.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -417,6 +417,24 @@
           "year_to": {
             "type": "integer",
             "description": "Latest fiscal year to include (e.g. 2023)."
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "pl",
+              "en",
+              "de"
+            ],
+            "description": "Language of `insights` (default pl)."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "pln",
+              "usd",
+              "eur"
+            ],
+            "description": "Currency of amounts inside `insights` (default pln). Statement figures stay in PLN."
           }
         }
       },
@@ -1113,6 +1131,43 @@
       },
       "annotations": {
         "title": "Get Public Benefit Status (OPP, 1.5% of tax)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_facilities",
+      "title": "Get Pharmacies and Schools Run by Company",
+      "description": "Get pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company — name, type, town, address, operating status, opening date, number of students. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred)."
+          },
+          "active_only": {
+            "type": "boolean",
+            "description": "Only currently operating facilities."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max facilities (default 100, max 300)."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Pharmacies and Schools Run by Company",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
