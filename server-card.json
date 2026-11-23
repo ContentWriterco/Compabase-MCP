@@ -1341,6 +1341,35 @@
       }
     },
     {
+      "name": "get_company_transport_licenses",
+      "title": "Get Road Transport Licences (KREPTD)",
+      "description": "Get road transport licences from the KREPTD register (GITD) — EU community licences (goods over / up to 3.5 t, passengers) and national road carrier permits with number, status (valid / suspended / withdrawn / expired), issue and expiry dates, issuing authority, vehicle counts, current certified copies (wypisy) and a fleet estimate. Keyed by NIP. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number (preferred for KREPTD)."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Road Transport Licences (KREPTD)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "get_company_stock_market",
       "title": "Get Warsaw Stock Exchange Data (GPW)",
       "description": "Get Warsaw Stock Exchange listing for a company — ticker, ISIN, market (GPW main / NewConnect / GlobalConnect), last close and change, market cap, shares outstanding, TTM EPS, TTM P/E (falls back to last annual filing), last quarterly results, next earnings date, dividend per share and yield. Quotes delayed ~15 minutes, in PLN. Snapshot plus a few recent daily bars — not full OHLCV history. Keyed by NIP. Identify company by name, KRS, or NIP.",

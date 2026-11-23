@@ -117,6 +117,7 @@ tags:
       - `get_company_facilities` — pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company
       - `get_company_procurement_disputes` — National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company
       - `get_company_waste_registry` — BDO waste and packaging register data
+      - `get_company_transport_licenses` — road transport licences from the KREPTD register (GITD)
       - `get_company_stock_market` — Warsaw Stock Exchange listing for a company
       - `get_company_eu_tenders` — TED EU-threshold public procurement
       - `get_company_court_gazette` — Court and Commercial Gazette (MSiG) notices for one company
@@ -1441,6 +1442,67 @@ paths:
                       issued_at: "1998-12-16"
                       valid_to: "2040-12-31"
                       is_active: true
+
+  /tools/get_company_transport_licenses:
+    post:
+      tags: [Tools]
+      summary: get_company_transport_licenses
+      operationId: get_company_transport_licenses
+      description: |
+        Road transport licences from the KREPTD register (GITD): EU community licences and national road
+        carrier permits with status, dates, issuing authority, vehicle counts, current certified copies
+        (wypisy) and a fleet estimate. Keyed by NIP; `transport` is null when the company is not in KREPTD.
+
+        **Example prompts:** “Does this company have an EU community licence?” · “How many trucks does Raben Transport run?”
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyIdentityArgs'
+            example:
+              krs: "0000044183"
+      responses:
+        '200':
+          description: Wrapper with `registry_number`, `nip`, and `transport` snapshot + licence/permit items
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+              example:
+                registry_number: "0000044183"
+                nip: "7810020506"
+                transport:
+                  checked_at: "2026-11-23T15:17:07.198Z"
+                  has_active: true
+                  items_count: 2
+                  active_count: 2
+                  licence_vehicles: 159
+                  permit_vehicles: 360
+                  extracts_active_count: 263
+                  fleet_estimate: 360
+                  managers_count: 1
+                  source_url: https://kreptd.gitd.gov.pl/
+                  items:
+                    - kind: licence
+                      scope: goods_heavy
+                      number: TU-000164
+                      status: valid
+                      is_active: true
+                      issued_at: "2002-02-28"
+                      valid_to: "2052-02-28"
+                      vehicles_count: 159
+                      extracts_active_count: 263
+                      extracts_total_count: 1105
+                    - kind: permit
+                      scope: goods
+                      number: "0058554"
+                      status: valid
+                      is_active: true
+                      issuing_authority: Starostwo Powiatowe w Poznaniu
+                      issued_at: "2003-12-31"
+                      vehicles_count: 360
 
   /tools/get_company_waste_registry:
     post:

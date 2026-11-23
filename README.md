@@ -80,7 +80,7 @@ Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/
 Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
 <!-- tools:start -->
-61 tools on the full server (generated from the live `tools/list`).
+62 tools on the full server (generated from the live `tools/list`).
 
 ### Onboarding (no key)
 
@@ -125,6 +125,7 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_facilities` | Get pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company |
 | `get_company_procurement_disputes` | Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company |
 | `get_company_waste_registry` | Get BDO waste and packaging register data |
+| `get_company_transport_licenses` | Get road transport licences from the KREPTD register (GITD) |
 | `get_company_stock_market` | Get Warsaw Stock Exchange listing for a company |
 | `get_company_eu_tenders` | Get TED EU-threshold public procurement |
 | `get_company_court_gazette` | Get Court and Commercial Gazette (MSiG) notices for one company |
