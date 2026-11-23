@@ -113,6 +113,7 @@ tags:
       - `get_company_public_benefit` — public benefit organisation (OPP) status of a foundation or association
       - `get_company_news` — news the company published on its own website (and on Compabase): title, link, publication date and short description, newest first
       - `get_company_financial_documents` — the list of documents the company filed to the KRS Financial Documents Repository (RDF): document kind, period and format (XML or PDF), newest first
+      - `get_company_market_environment` — the market environment of the company's industry (NAICS classification, else PKD 2007 class): a one-sentence summary (favourable / unfavourable / mixed / stable) and up to 4 strongest, non-overlapping indicators, each with a headline, a concrete observation with figures, effect on the company (positive/negative/neutral), source and the time series
       - `get_company_rail_punctuality` — train punctuality of a Polish passenger rail carrier from PKP PLK open rail data: number of runs, share on time (arrival at the final station under 6 minutes late), average delay, cancellations, comparison with all carriers in Poland and rank, day-by-day series, punctuality by category/line, worst trains and runs
       - `get_company_facilities` — pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company
       - `get_company_procurement_disputes` — National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company
@@ -3034,6 +3035,24 @@ paths:
         content:
           application/json:
             schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."},"limit":{"type":"integer","description":"Max documents (default 25, max 100)."},"offset":{"type":"integer","description":"Pagination offset."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_market_environment:
+    post:
+      tags: [Tools]
+      summary: get_company_market_environment
+      operationId: get_company_market_environment
+      description: "Get the market environment of the company's industry (NAICS classification, else PKD 2007 class): a one-sentence summary (favourable / unfavourable / mixed / stable) and up to 4 strongest, non-overlapping indicators, each with a headline, a concrete observation with figures, effect on the company (positive/negative/neutral), source and the time series. Indicators: revenue growth and net margin of comparable companies computed from KRS financial statements, demand (sales/services volume, output), prices and bankruptcies from Monitly (Eurostat, GUS), latest-month GUS retail prices of what the company or its industry sells. Identify company by name, KRS, or NIP; sole proprietors (CEIDG) by NIP, matched by their main PKD class."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."},"lang":{"type":"string","enum":["pl","en","de"],"description":"Language of summary and observations (default pl)."}}}
       responses:
         '200':
           description: Tool result (JSON)

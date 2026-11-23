@@ -80,7 +80,7 @@ Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/
 Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
 <!-- tools:start -->
-62 tools on the full server (generated from the live `tools/list`).
+63 tools on the full server (generated from the live `tools/list`).
 
 ### Onboarding (no key)
 
@@ -121,6 +121,7 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_public_benefit` | Get public benefit organisation (OPP) status of a foundation or association |
 | `get_company_news` | Get news the company published on its own website (and on Compabase): title, link, publication date and short description, newest first |
 | `get_company_financial_documents` | Get the list of documents the company filed to the KRS Financial Documents Repository (RDF): document kind, period and format (XML or PDF), newest first |
+| `get_company_market_environment` | Get the market environment of the company's industry (NAICS classification, else PKD 2007 class): a one-sentence summary (favourable / unfavourable / mixed /… |
 | `get_company_rail_punctuality` | Get train punctuality of a Polish passenger rail carrier from PKP PLK open rail data: number of runs, share on time (arrival at the final station under 6… |
 | `get_company_facilities` | Get pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company |
 | `get_company_procurement_disputes` | Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company |
