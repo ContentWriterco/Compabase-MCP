@@ -80,7 +80,7 @@ Live traffic is always `POST https://compabase.com/api/mcp` with `method: tools/
 Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com/docs/mcp/).
 
 <!-- tools:start -->
-58 tools on the full server (generated from the live `tools/list`).
+61 tools on the full server (generated from the live `tools/list`).
 
 ### Onboarding (no key)
 
@@ -119,6 +119,9 @@ Full schemas: [`mcp.yaml`](mcp.yaml) · [interactive docs](https://compabase.com
 | `get_company_trademarks` | Get Polish Patent Office (UPRP) trademarks owned or applied for by the company |
 | `get_company_corporate_tax` | Get corporate income tax (CIT) return data published by the Polish Ministry of Finance for the largest taxpayers (revenue above EUR 50 million), tax capital… |
 | `get_company_public_benefit` | Get public benefit organisation (OPP) status of a foundation or association |
+| `get_company_news` | Get news the company published on its own website (and on Compabase): title, link, publication date and short description, newest first |
+| `get_company_financial_documents` | Get the list of documents the company filed to the KRS Financial Documents Repository (RDF): document kind, period and format (XML or PDF), newest first |
+| `get_company_rail_punctuality` | Get train punctuality of a Polish passenger rail carrier from PKP PLK open rail data: number of runs, share on time (arrival at the final station under 6… |
 | `get_company_facilities` | Get pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company |
 | `get_company_procurement_disputes` | Get National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company |
 | `get_company_waste_registry` | Get BDO waste and packaging register data |

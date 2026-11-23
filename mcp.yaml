@@ -111,6 +111,9 @@ tags:
       - `get_company_trademarks` — Polish Patent Office (UPRP) trademarks owned or applied for by the company
       - `get_company_corporate_tax` — corporate income tax (CIT) return data published by the Polish Ministry of Finance for the largest taxpayers (revenue above EUR 50 million), tax capital groups and real estate companies
       - `get_company_public_benefit` — public benefit organisation (OPP) status of a foundation or association
+      - `get_company_news` — news the company published on its own website (and on Compabase): title, link, publication date and short description, newest first
+      - `get_company_financial_documents` — the list of documents the company filed to the KRS Financial Documents Repository (RDF): document kind, period and format (XML or PDF), newest first
+      - `get_company_rail_punctuality` — train punctuality of a Polish passenger rail carrier from PKP PLK open rail data: number of runs, share on time (arrival at the final station under 6 minutes late), average delay, cancellations, comparison with all carriers in Poland and rank, day-by-day series, punctuality by category/line, worst trains and runs
       - `get_company_facilities` — pharmacies (Polish Pharmacy Register) and schools, kindergartens and other educational institutions (RSPO) run by the company
       - `get_company_procurement_disputes` — National Appeal Chamber (Krajowa Izba Odwoławcza, KIO) rulings in public procurement disputes involving the company
       - `get_company_waste_registry` — BDO waste and packaging register data
@@ -985,8 +988,10 @@ paths:
         auditor fee and revenue split.
 
         Every row also has `insights` — the financial signals shown on the Compabase profile for that
-        year and scope (plain-text sentences, e.g. negative equity or the cash share of current assets),
-        in `lang` with amounts in `currency`; an empty array when there are none.
+        year and scope (plain-text sentences, e.g. negative equity or the cash share of current assets) —
+        and `metric_summaries`, the sentences next to each statement line on the profile
+        (`revenue_total`, `ebitda`, `equity`, …: value, y/y change and structure).
+        Both in `lang` with amounts in `currency`; empty when none.
 
         **Example prompts:** “Show cash, liabilities, and equity from 2019 to 2023.”
         · “What was net profit and total assets year by year?” · “How many people does it employ?”
@@ -1010,11 +1015,11 @@ paths:
                     lang:
                       type: string
                       enum: [pl, en, de]
-                      description: Language of `insights` (default pl).
+                      description: Language of `insights` and `metric_summaries` (default pl).
                     currency:
                       type: string
                       enum: [pln, usd, eur]
-                      description: Currency of amounts inside `insights` (default pln).
+                      description: Currency of amounts inside `insights` and `metric_summaries` (default pln).
             example:
               krs: "0000028860"
               year_from: 2019
@@ -2926,6 +2931,60 @@ paths:
       summary: get_company_public_benefit
       operationId: get_company_public_benefit
       description: "Get public benefit organisation (OPP) status of a foundation or association — whether it is on the NIW list eligible for 1.5% of personal income tax, and the amounts it received from taxpayers' 1%/1.5% allocations each year since 2019 with approximate donor counts and national / regional rank. Identify by name or KRS."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_news:
+    post:
+      tags: [Tools]
+      summary: get_company_news
+      operationId: get_company_news
+      description: "Get news the company published on its own website (and on Compabase): title, link, publication date and short description, newest first. Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."},"lang":{"type":"string","enum":["pl","en","de"],"description":"Language of titles (default pl)."},"limit":{"type":"integer","description":"Max news items (default 20, max 50)."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_financial_documents:
+    post:
+      tags: [Tools]
+      summary: get_company_financial_documents
+      operationId: get_company_financial_documents
+      description: "Get the list of documents the company filed to the KRS Financial Documents Repository (RDF): document kind, period and format (XML or PDF), newest first. Figures extracted from these documents are in get_financials. Identify company by name, KRS, or NIP."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"type":"object","properties":{"name":{"type":"string","description":"Company name when KRS/NIP is unknown."},"krs":{"type":"string","description":"KRS registry number."},"nip":{"type":"string","description":"NIP tax number."},"limit":{"type":"integer","description":"Max documents (default 25, max 100)."},"offset":{"type":"integer","description":"Pagination offset."}}}
+      responses:
+        '200':
+          description: Tool result (JSON)
+          content:
+            application/json:
+              schema: {"type": "object", "additionalProperties": true}
+
+  /tools/get_company_rail_punctuality:
+    post:
+      tags: [Tools]
+      summary: get_company_rail_punctuality
+      operationId: get_company_rail_punctuality
+      description: "Get train punctuality of a Polish passenger rail carrier from PKP PLK open rail data: number of runs, share on time (arrival at the final station under 6 minutes late), average delay, cancellations, comparison with all carriers in Poland and rank, day-by-day series, punctuality by category/line, worst trains and runs. Identify company by name, KRS, or NIP."
       requestBody:
         required: true
         content:

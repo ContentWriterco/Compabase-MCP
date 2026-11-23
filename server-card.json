@@ -394,7 +394,7 @@
     {
       "name": "get_financials",
       "title": "Get Full Financial Statements",
-      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. The standalone row of the latest analysed statement also has `notes` (additional information from the statement): average employment (employees_avg, employees_avg_prev), income tax, profit distribution and dividend, parent and ultimate parent, related-party transactions, shareholdings, guarantees and contingent liabilities, loans, auditor fee, revenue split. Every row has `insights`: the financial signals shown on the Compabase profile for that year and scope (plain-text sentences, e.g. negative equity, cash share of current assets), in `lang` with amounts in `currency`; [] when none. Identify company by name, KRS, or NIP.",
+      "description": "Get full financial statement metrics per fiscal period — all entity_financial_metrics columns. Includes cash_and_equivalents, inventories, receivables, liabilities, equity, cost breakdown, revenue lines. The standalone row of the latest analysed statement also has `notes` (additional information from the statement): average employment (employees_avg, employees_avg_prev), income tax, profit distribution and dividend, parent and ultimate parent, related-party transactions, shareholdings, guarantees and contingent liabilities, loans, auditor fee, revenue split. Every row has `insights`: the financial signals shown on the Compabase profile for that year and scope (plain-text sentences, e.g. negative equity, cash share of current assets), and `metric_summaries`: the sentences next to each statement line on the profile ({ revenue_total: [...], ebitda: [...], equity: [...], … }, with y/y change and structure). Both in `lang` with amounts in `currency`; [] / {} when none. Identify company by name, KRS, or NIP.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -425,7 +425,7 @@
               "en",
               "de"
             ],
-            "description": "Language of `insights` (default pl)."
+            "description": "Language of `insights` and `metric_summaries` (default pl)."
           },
           "currency": {
             "type": "string",
@@ -434,7 +434,7 @@
               "usd",
               "eur"
             ],
-            "description": "Currency of amounts inside `insights` (default pln). Statement figures stay in PLN."
+            "description": "Currency of amounts inside `insights` and `metric_summaries` (default pln). Statement figures stay in PLN."
           }
         }
       },
@@ -1131,6 +1131,114 @@
       },
       "annotations": {
         "title": "Get Public Benefit Status (OPP, 1.5% of tax)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_news",
+      "title": "Get Company News",
+      "description": "Get news the company published on its own website (and on Compabase): title, link, publication date and short description, newest first. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "pl",
+              "en",
+              "de"
+            ],
+            "description": "Language of titles (default pl)."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max news items (default 20, max 50)."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Company News",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_financial_documents",
+      "title": "Get Filed Financial Documents",
+      "description": "Get the list of documents the company filed to the KRS Financial Documents Repository (RDF): document kind, period and format (XML or PDF), newest first. Figures extracted from these documents are in get_financials. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Max documents (default 25, max 100)."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Pagination offset."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Filed Financial Documents",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_company_rail_punctuality",
+      "title": "Get Train Punctuality of Rail Carrier",
+      "description": "Get train punctuality of a Polish passenger rail carrier from PKP PLK open rail data: number of runs, share on time (arrival at the final station under 6 minutes late), average delay, cancellations, comparison with all carriers in Poland and rank, day-by-day series, punctuality by category/line, worst trains and runs. Identify company by name, KRS, or NIP.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Company name when KRS/NIP is unknown."
+          },
+          "krs": {
+            "type": "string",
+            "description": "KRS registry number."
+          },
+          "nip": {
+            "type": "string",
+            "description": "NIP tax number."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get Train Punctuality of Rail Carrier",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
