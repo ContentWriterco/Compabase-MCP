@@ -263,7 +263,7 @@
           },
           "niche": {
             "type": "string",
-            "description": "Detailed industry in words (Polish), matched against the company's niche, e.g. 'opakowania', 'software house', 'catering'."
+            "description": "Detailed industry in words (Polish, English or German), matched against the company's niche, e.g. 'opakowania', 'software house', 'catering', 'Verpackungen'."
           },
           "capital_min": {
             "type": "number",
@@ -356,7 +356,7 @@
     {
       "name": "get_company",
       "title": "Get Company Profile",
-      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, estimated_value (Ohlson/RIM equity estimate), PKD, address, plus contacts when on record, full address, share capital, representation, recent KRS changes and `company_summary` (company description from the profile, language via `lang`), `logo_url`, `job_offers` (current job offers from the company career page and public job boards), `similar_companies`, `vat` (MF white list: VAT status, VAT registration date, bank accounts, removal/restoration, date Compabase checked it). All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
+      "description": "Get company registry profile and headline financials for one latest filed period (`financials.period_to` / `financial_period_to`): revenue, profit, costs, assets, estimated_value (Ohlson/RIM equity estimate), PKD, address, plus contacts when on record, full address, share capital, representation, recent KRS changes and `company_summary` (company description from the profile, language via `lang`), `logo_url`, `niche_pl` / `niche_en` / `niche_de` (detailed industry in words: what the company actually does, in Polish, English and German) with `naics_codes`, `job_offers` (current job offers from the company career page and public job boards), `similar_companies`, `vat` (MF white list: VAT status, VAT registration date, bank accounts, removal/restoration, date Compabase checked it). All money fields in this response are that same period — there is no nested summary from a different year. NIP lookup also returns a CEIDG/JDG firm when it has a public contact email (RODO). Does NOT include balance-sheet line items (cash, receivables, inventories). For those or earlier years, use get_financials.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -585,7 +585,7 @@
           },
           "niche": {
             "type": "string",
-            "description": "Detailed industry in words (Polish), matched against the company's niche, e.g. 'opakowania', 'software house', 'catering'."
+            "description": "Detailed industry in words (Polish, English or German), matched against the company's niche, e.g. 'opakowania', 'software house', 'catering', 'Verpackungen'."
           },
           "capital_min": {
             "type": "number",
